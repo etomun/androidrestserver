@@ -10,7 +10,7 @@ pip install -r requirements.txt
 echo "All requirements have been set"
 
 # Set domain name using dnsmasq, restart the existing process
-pkill dnsmasq && dnsmasq -C ~/visitmarthapura/.local-dns.conf
+# pkill dnsmasq && dnsmasq -C ~/visitmarthapura/.local-dns.conf
 
 # Restart the FastAPI application using uvicorn
 uvicorn main:app --host 0.0.0.0 --port 1717 --reload
