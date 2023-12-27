@@ -7,6 +7,6 @@ git pull origin master
 chmod +x deploy.sh
 
 # Set domain name using dnsmasq
-dnsmasq -C ~/visitmarthapura/.local-dns.conf
+pkill dnsmasq && dnsmasq -C ~/visitmarthapura/.local-dns.conf
 
 
