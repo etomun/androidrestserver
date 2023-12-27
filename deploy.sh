@@ -2,6 +2,9 @@
 
 echo "Starting deployment process..."
 
+# Pull the latest changes from the GitHub
+git pull origin master
+
 # Install or update Python dependencies
 pip install -r requirements.txt
 echo "All requirements have been set"
