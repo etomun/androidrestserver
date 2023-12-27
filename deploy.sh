@@ -1,13 +1,6 @@
 #!/bin/bash
 
 echo "Starting deployment process..."
-#cd visitmarthapura
-
-# Pull the latest changes from the GitHub
-git pull origin master
-
-# Set domain name using dnsmasq
-dnsmasq -C ~/visitmarthapura/.local-dns.conf
 
 # Install or update Python dependencies
 pip install -r requirements.txt
