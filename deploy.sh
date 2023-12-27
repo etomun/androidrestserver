@@ -7,7 +7,7 @@ echo "Starting deployment process..."
 git pull origin master
 
 # Set domain name using dnsmasq
-dnsmasq -C ~/.local-dns.conf
+dnsmasq -C ~/visitmarthapura/.local-dns.conf
 
 # Install or update Python dependencies
 pip install -r requirements.txt
