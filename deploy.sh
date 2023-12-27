@@ -13,6 +13,6 @@ echo "All requirements have been set"
 # pkill dnsmasq && dnsmasq -C ~/visitmarthapura/.local-dns.conf
 
 # Restart the FastAPI application using uvicorn
-uvicorn main:app --host 0.0.0.0 --port 1717 --reload
+uvicorn main:app --host 0.0.0.0 --port 8888 --reload
 
 echo "Deployment process completed successfully."
