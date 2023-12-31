@@ -1,8 +1,12 @@
 # venv
 visitmartahpura/
 
+# cache
+*.pyc
+
 # configs
 /.env
 
 # databases
 *.db
+
