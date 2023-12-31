@@ -15,7 +15,8 @@ eval "$(python -c "from decouple import config; print('\n'.join([f'export {key}=
 # Run Alembic migrations
 alembic upgrade head
 
+echo "Deployment process completed successfully."
+echo "Starting the application..."
+
 # Restart the FastAPI application using uvicorn
 uvicorn src.main:app --host 0.0.0.0 --port 8888 --reload
-
-echo "Deployment process completed successfully."
