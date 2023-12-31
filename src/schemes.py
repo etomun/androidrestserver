@@ -1,8 +1,7 @@
 from datetime import datetime
 from typing import Optional, TypeVar, Generic
 
-from pydantic import BaseModel
-from pydantic.v1 import validator
+from pydantic import BaseModel, validator
 
 from src.utils import convert_datetime_to_gmt
 
