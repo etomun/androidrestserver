@@ -3,4 +3,12 @@ uvicorn
 pyjwt
 pydantic
 SQLAlchemy
+alembic
 starlette
+python-jose
+python-decouple
+python-multipart
+passlib
+bcrypt==4.0.1
+pytest
+httpx

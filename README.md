@@ -1,3 +1,9 @@
+__Deployment__
+
+Use deploy.sh ``./deploy.sh``
+
+----
+
 __Crucial FastAPI requirements and installation on Termux__
 
 - ``pkg update && pkg upgrade``

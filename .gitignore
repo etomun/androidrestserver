@@ -1,2 +1,8 @@
 # venv
 visitmartahpura/
+
+# configs
+/.env
+
+# databases
+*.db

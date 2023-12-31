@@ -9,10 +9,13 @@ git pull origin master
 pip install -r requirements.txt
 echo "All requirements have been set"
 
-# Set domain name using dnsmasq, restart the existing process
-# pkill dnsmasq && dnsmasq -C ~/visitmarthapura/.local-dns.conf
+# Load environment variables from .env using python-decouple
+eval "$(python -c "from decouple import config; print('\n'.join([f'export {key}={value}' for key, value in config.items()]))")"
+
+# Run Alembic migrations
+alembic upgrade head
 
 # Restart the FastAPI application using uvicorn
-uvicorn main:app --host 0.0.0.0 --port 8888 --reload
+uvicorn src.main:app --host 0.0.0.0 --port 8888 --reload
 
 echo "Deployment process completed successfully."
