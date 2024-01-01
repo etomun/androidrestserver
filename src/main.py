@@ -2,6 +2,8 @@ import logging
 
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
+from starlette.responses import HTMLResponse
+from starlette.staticfiles import StaticFiles
 
 from src import account, visitor, address, event, queue
 from src.account.dependencies import verify_token
@@ -45,7 +47,10 @@ app.include_router(queue.router, prefix="/api/queue", tags=["Event Visitor Queue
 app.include_router(address.router, prefix="/api/address", tags=["Address"], dependencies=[Depends(verify_token)])
 app.include_router(visitor.router, prefix="/api/visitor", tags=["Visitor"], dependencies=[Depends(verify_token)])
 
+# Mount the dist directory containing the bundled SPA
+app.mount("/", StaticFiles(directory="web/dist"), name="static")
+
 
 @app.get("/")
-def read_root():
-    return {"message": "Sugeng Rawuh"}
+async def read_index():
+    return HTMLResponse(content=open("web/dist/index.html", "r").read())

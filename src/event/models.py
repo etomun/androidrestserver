@@ -59,7 +59,7 @@ class Event(Base):
         return all_valid
 
     @validates('expected_start_date')
-    def validate_expected_start_date(self, value):
+    def validate_expected_start_date(self, key, value):
         if value >= self.expected_end_date:
             raise ValueError("Date cannot be on or after the end date.")
 
@@ -69,7 +69,7 @@ class Event(Base):
         return str_to_date_time_gmt(value)
 
     @validates('expected_end_date')
-    def validate_expected_end_date(self, value):
+    def validate_expected_end_date(self, key, value):
         if value <= self.expected_start_date:
             raise ValueError("Date cannot be on or before the start date.")
 
@@ -79,7 +79,7 @@ class Event(Base):
         return str_to_date_time_gmt(value)
 
     @validates('start_date')
-    def validate_start_date(self, value):
+    def validate_start_date(self, key, value):
         if value >= self.end_date:
             raise ValueError("Date cannot be on or after the end date.")
 
@@ -89,7 +89,7 @@ class Event(Base):
         return str_to_date_time_gmt(value)
 
     @validates('end_date')
-    def validate_end_date(self, value):
+    def validate_end_date(self, key, value):
         if value <= self.start_date:
             raise ValueError("Date cannot be on or before the start date.")
 
