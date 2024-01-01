@@ -15,11 +15,11 @@ async def add(db: Session, data: list[AddressCreate]):
     return True
 
 
-async def get_by_id(db: Session, address_id: int) -> Address:
+async def get_by_id(db: Session, address_id: int):
     return db.query(Address).filter(Address.id == address_id).first()
 
 
-async def search(db: Session, keyword: str) -> list[Address]:
+async def search(db: Session, keyword: str):
     addresses = db.query(Address).filter(
         (Address.village.ilike(f"%{keyword}%")) |
         (Address.district.ilike(f"%{keyword}%"))
@@ -35,4 +35,4 @@ async def update(db: Session, address_id: int, data: AddressCreate):
         db_address.line = data.line
         db.commit()
         db.refresh(db_address)
-    return db_address
+    return db_address.to_response()

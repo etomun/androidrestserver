@@ -4,16 +4,14 @@ from src.account.models import Account
 from src.schemes import ApiRequest
 
 
-class CreateAccount(ApiRequest):
+class AccountLogin(ApiRequest):
     username: str
     password: str
+
+
+class AccountCreate(AccountLogin):
     phone: str
     name: str
-
-
-class Login(ApiRequest):
-    username: str
-    password: str
 
 
 class RefreshToken(ApiRequest):

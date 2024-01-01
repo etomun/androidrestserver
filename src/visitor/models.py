@@ -12,10 +12,10 @@ class Visitor(Base):
     id = Column(String, primary_key=True, default=str(uuid.uuid4()), unique=True, nullable=False)
     unique_code = Column(String, index=True, nullable=False)
     name = Column(String, index=True, nullable=False)
+    address_id = Column(String, ForeignKey("addresses.id"), index=True, nullable=False)
     gender = Column(String)
     age = Column(Integer)
     is_relatives = Column(Boolean)
-    address_id = Column(String, ForeignKey("addresses.id"), index=True)
 
     # Relationship with Address and VisitorQueue
     address = relationship("Address", back_populates="visitors")

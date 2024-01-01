@@ -11,20 +11,20 @@ router = APIRouter()
 
 
 @router.post("/create-admin", response_model=ApiResponse[AccountResponse])
-async def create_account(data: CreateAccount, db: Session = Depends(get_db), allowed=Depends(verify_admin)):
+async def create_account(data: AccountCreate, db: Session = Depends(get_db), allowed=Depends(verify_admin)):
     if allowed:
         user = await create(db, data)
         return ApiResponse(data=AccountResponse.from_account(account=user))
 
 
 @router.post("/create", response_model=ApiResponse[AccountResponse])
-async def create_account(data: CreateAccount, db: Session = Depends(get_db)):
+async def create_account(data: AccountCreate, db: Session = Depends(get_db)):
     user = await create(db, data)
     return ApiResponse(data=AccountResponse.from_account(account=user))
 
 
 @router.post("/login", response_model=ApiResponse[LoginResponse])
-async def login(data: Login, db: Session = Depends(get_db)):
+async def login(data: AccountLogin, db: Session = Depends(get_db)):
     user = await authenticate(db, data)
     token = await create_token(user.username)
     return ApiResponse(data=LoginResponse.from_account(account=user, token=token))

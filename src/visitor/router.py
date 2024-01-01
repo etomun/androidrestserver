@@ -1,31 +1,38 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from src.database import SessionLocal
-from src.visitor.service import create, get_by_id, update
+from src.database import get_db
+from src.visitor.schemas import VisitorCreate, ChangeName, SetRelatives, ChangeAddress
+from src.visitor.service import add, get_by_code, get_all, update_name, update_address, update_relatives
 
 router = APIRouter()
 
 
-@router.post("/create")
-def create_visitor(name: str, gender: str, age: int, is_relatives: bool, address_id: int,
-                   db: Session = Depends(SessionLocal)):
-    return create(db, name=name, gender=gender, age=age, is_relatives=is_relatives, address_id=address_id)
+@router.post("/register")
+def register_visitor(data: VisitorCreate, db: Session = Depends(get_db)):
+    return add(db, data)
 
 
-@router.get("/{visitor_id}")
-def get_visitor(visitor_id: int, db: Session = Depends(SessionLocal)):
-    db_visitor = get_by_id(db, visitor_id)
-    if db_visitor is None:
-        raise HTTPException(status_code=404, detail="Visitor not found")
-    return db_visitor
+@router.get("/{visitor_code}")
+def get_visitor(visitor_code: str, db: Session = Depends(get_db)):
+    return get_by_code(db, visitor_code)
 
 
-@router.put("/visitors/{visitor_id}")
-def update_visitor(visitor_id: int, name: str, gender: str, age: int, is_relatives: bool, address_id: int,
-                   db: Session = Depends(SessionLocal)):
-    db_visitor = update(db, visitor_id, name=name, gender=gender, age=age, is_relatives=is_relatives,
-                        address_id=address_id)
-    if db_visitor is None:
-        raise HTTPException(status_code=404, detail="Visitor not found")
-    return db_visitor
+@router.get("/")
+def get_visitors(db: Session = Depends(get_db)):
+    return get_all(db)
+
+
+@router.post("/change-name")
+def change_name(data: ChangeName, db: Session = Depends(get_db)):
+    return update_name(db, data)
+
+
+@router.post("/change-address")
+def change_address(data: ChangeAddress, db: Session = Depends(get_db)):
+    return update_address(db, data)
+
+
+@router.post("/change-relatives")
+def change_relatives(data: SetRelatives, db: Session = Depends(get_db)):
+    return update_relatives(db, data)

@@ -2,11 +2,11 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from src.account.models import Account
-from src.account.schemas import CreateAccount, Login, ChangePassword, ChangePhone, ChangeName
+from src.account.schemas import AccountCreate, AccountLogin, ChangePassword, ChangePhone, ChangeName
 from src.account.utils import hash_password, verify_password
 
 
-async def create(db: Session, data: CreateAccount):
+async def create(db: Session, data: AccountCreate):
     if db.query(Account).filter(Account.username == data.username).first():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken")
 
@@ -27,14 +27,14 @@ async def create(db: Session, data: CreateAccount):
     return new_user
 
 
-async def authenticate(db: Session, data: Login) -> Account | None:
+async def authenticate(db: Session, data: AccountLogin) -> Account | None:
     user = db.query(Account).filter(Account.username == data.username).first()
     if user and verify_password(data.password, user.hashed_password):
         return user
     return None
 
 
-async def get_account(db: Session, uid: str):
+async def get_by_id(db: Session, uid: str):
     return db.query(Account).filter(Account.id == uid).first()
 
 
