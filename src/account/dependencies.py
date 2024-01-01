@@ -5,10 +5,11 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 
-from src.account.config import ATE_MINUTES, SECRET_KEY, ALGORITHM, RTE_DAYS
+from src.account.config import ATE_MINUTES, RTE_DAYS
 from src.account.constants import RTE, SUBJECT
 from src.account.models import Account
 from src.account.schemas import TokenData
+from src.config import JWT_SECRET_KEY, ALGORITHM
 from src.database import get_db
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -17,7 +18,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 async def __create_token(data: dict, expires_delta: timedelta):
     exp = datetime.utcnow() + expires_delta
     exp_timestamp = int(exp.timestamp())
-    return jwt.encode({RTE: exp_timestamp, **data}, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode({RTE: exp_timestamp, **data}, JWT_SECRET_KEY, algorithm=ALGORITHM)
 
 
 async def create_token(username: str):
@@ -35,7 +36,7 @@ async def verify_token(db: Session = Depends(get_db), token: str = Depends(oauth
     )
 
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get(SUBJECT)
         if username is None:
             raise credentials_exception

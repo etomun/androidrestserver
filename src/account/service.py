@@ -1,16 +1,12 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from src.account.config import CREATE_ADMIN_KEY
 from src.account.models import Account
 from src.account.schemas import CreateAccount, Login, ChangePassword, ChangePhone, ChangeName
 from src.account.utils import hash_password, verify_password
 
 
-async def create(db: Session, data: CreateAccount, admin_key: str = None, ):
-    if admin_key is not None and admin_key != CREATE_ADMIN_KEY:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid Admin Key")
-
+async def create(db: Session, data: CreateAccount):
     if db.query(Account).filter(Account.username == data.username).first():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken")
 
@@ -24,8 +20,6 @@ async def create(db: Session, data: CreateAccount, admin_key: str = None, ):
         phone=data.phone,
         name=data.name
     )
-    if admin_key is not None and admin_key == CREATE_ADMIN_KEY:
-        new_user.set_as_admin()
 
     db.add(new_user)
     db.commit()

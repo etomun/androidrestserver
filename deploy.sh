@@ -15,6 +15,8 @@ eval "$(python -c "from decouple import config; print('\n'.join([f'export {key}=
 # Run Alembic migrations
 alembic upgrade head
 
+# I skipped the test in production
+
 echo "Deployment process completed successfully."
 echo "Starting the application..."
 

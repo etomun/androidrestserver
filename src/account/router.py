@@ -4,14 +4,22 @@ from src.account.dependencies import create_token, verify_token
 from src.account.schemas import *
 from src.account.service import *
 from src.database import get_db
+from src.dependencies import verify_admin
 from src.schemes import ApiResponse
 
 router = APIRouter()
 
 
+@router.post("/create-admin", response_model=ApiResponse[AccountResponse])
+async def create_account(data: CreateAccount, db: Session = Depends(get_db), allowed=Depends(verify_admin)):
+    if allowed:
+        user = await create(db, data)
+        return ApiResponse(data=AccountResponse.from_account(account=user))
+
+
 @router.post("/create", response_model=ApiResponse[AccountResponse])
-async def create_account(data: CreateAccount, admin_key: str = None, db: Session = Depends(get_db)):
-    user = await create(db, data, admin_key)
+async def create_account(data: CreateAccount, db: Session = Depends(get_db)):
+    user = await create(db, data)
     return ApiResponse(data=AccountResponse.from_account(account=user))
 
 

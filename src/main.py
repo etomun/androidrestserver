@@ -1,7 +1,6 @@
 import logging
 
 from fastapi import FastAPI, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.exc import IntegrityError
 
 from src import account, visitor, address, event, queue
@@ -10,30 +9,6 @@ from src.database import init_db
 from src.exceptions import GeneralException
 
 app = FastAPI()
-
-#
-# # Define OAuth2 scheme
-# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-#
-# # Configure OAuth2 in Swagger UI
-# app.openapi_schema = {
-#     "openapi": "3.0.0",
-#     "info": {"title": "FastAPI", "version": "0.1.0"},
-#     "security": [
-#         {
-#             "bearerAuth": []
-#         }
-#     ],
-#     "components": {
-#         "securitySchemes": {
-#             "bearerAuth": {
-#                 "type": "http",
-#                 "scheme": "bearer",
-#                 "bearerFormat": "JWT",
-#             }
-#         },
-#     },
-# }
 
 # Initialize the database tables
 init_db()
