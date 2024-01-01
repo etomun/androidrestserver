@@ -1,6 +1,7 @@
+import uuid
 from enum import Enum as PythonEnum
 
-from sqlalchemy import Column, Integer, ForeignKey, DateTime, func, Enum
+from sqlalchemy import Column, String, ForeignKey, DateTime, func, Enum
 from sqlalchemy.orm import relationship, validates
 
 from src.database import Base
@@ -15,9 +16,9 @@ class QueueState(str, PythonEnum):
 class VisitorQueue(Base):
     __tablename__ = "queue"
 
-    id = Column(Integer, primary_key=True, index=True)
-    event_id = Column(Integer, ForeignKey("events.id"))
-    visitor_id = Column(Integer, ForeignKey("visitors.id"))
+    id = Column(String, primary_key=True, default=str(uuid.uuid4()), unique=True, nullable=False)
+    event_id = Column(String, ForeignKey("events.id"), nullable=False)
+    visitor_id = Column(String, ForeignKey("visitors.id"), nullable=False)
     state = Column(Enum(QueueState), default=QueueState.queued.value)
     timestamp = Column(DateTime, server_default=func.now(), onupdate=func.now())
 

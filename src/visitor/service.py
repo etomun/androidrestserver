@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from src.visitor.models import Visitor
 
 
-def create_visitor(db: Session, unique_code: str, name: str, gender: str, age: int, is_relatives: bool,
-                   address_id: int):
+def create(db: Session, unique_code: str, name: str, gender: str, age: int, is_relatives: bool,
+           address_id: int):
     # Avoid double visitor
     existing_visitor = db.query(Visitor).filter(Visitor.unique_code == unique_code).first()
     if existing_visitor:
@@ -17,7 +17,7 @@ def create_visitor(db: Session, unique_code: str, name: str, gender: str, age: i
     return db_visitor
 
 
-def get_visitor(db: Session, unique_code: int):
+def get_by_id(db: Session, unique_code: int):
     return db.query(Visitor).filter(Visitor.id == unique_code).first()
 
 
@@ -25,8 +25,8 @@ def get_visitors(db: Session, skip: int = 0, limit: int = 10):
     return db.query(Visitor).offset(skip).limit(limit).all()
 
 
-def update_visitor(db: Session, visitor_id: int, unique_code: str, name: str, gender: str, age: int, is_relatives: bool,
-                   address_id: int):
+def update(db: Session, visitor_id: int, unique_code: str, name: str, gender: str, age: int, is_relatives: bool,
+           address_id: int):
     db_visitor = db.query(Visitor).filter(Visitor.id == visitor_id).first()
     if db_visitor:
         db_visitor.unique_code = unique_code

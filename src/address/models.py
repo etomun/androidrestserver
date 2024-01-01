@@ -1,4 +1,6 @@
-from sqlalchemy import Column, Integer, String
+import uuid
+
+from sqlalchemy import Column, String
 from sqlalchemy.orm import relationship
 
 from src.database import Base
@@ -7,9 +9,9 @@ from src.database import Base
 class Address(Base):
     __tablename__ = "addresses"
 
-    id = Column(Integer, primary_key=True, index=True)
-    village = Column(String, index=True)
-    district = Column(String, index=True)
+    id = Column(String, primary_key=True, default=str(uuid.uuid4()), unique=True, nullable=False)
+    village = Column(String, index=True, nullable=False)
+    district = Column(String, index=True, nullable=False)
     line = Column(String, index=True)
 
     # Relationship with Visitor

@@ -1,6 +1,7 @@
+import uuid
 from enum import Enum as PythonEnum
 
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, String, DateTime
 from sqlalchemy.orm import relationship, validates
 
 from src.database import Base
@@ -17,12 +18,12 @@ class EventState(str, PythonEnum):
 class Event(Base):
     __tablename__ = "events"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
+    id = Column(String, primary_key=True, default=str(uuid.uuid4()), unique=True, nullable=False)
+    name = Column(String, index=True, nullable=False)
+    location = Column(String, nullable=False)
+    start_date = Column(DateTime, nullable=False)
+    end_date = Column(DateTime, nullable=False)
     organizer = Column(String)
-    location = Column(String)
-    start_date = Column(DateTime)
-    end_date = Column(DateTime)
     actual_start_date = Column(DateTime)
     actual_end_date = Column(DateTime)
     description = Column(String)

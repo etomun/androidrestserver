@@ -34,7 +34,7 @@ async def get_address(address_id: int, db: Session = Depends(SessionLocal)):
     return db_address
 
 
-@router.put("/{address_id}")
+@router.put("/update/{address_id}")
 async def update_address(address_id: int, data: AddressCreate, db: Session = Depends(SessionLocal)):
     db_address = update(db, address_id, data)
     if db_address is None:
