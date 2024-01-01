@@ -1,20 +1,41 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from src.account.dependencies import verify_token
+from src.account.models import Account
 from src.database import get_db
-from src.queue.service import update_queue
+from src.queue.models import QueueState
+from src.queue.schemas import UpdateQueue
+from src.queue.service import update_state, add_new, get_by_status
 
 router = APIRouter()
 
 
-@router.post("/queue/")
-def add_queue(event_id: int, visitor_id: int, state: str, db: Session = Depends(get_db)):
-    return add_queue(db, event_id=event_id, visitor_id=visitor_id, state=state)
+@router.post("/add")
+async def add_queue(data: UpdateQueue, db: Session = Depends(get_db), user: Account = Depends(verify_token)):
+    return await add_new(db, user, data)
 
 
-@router.put("/queue/update_state")
-def update_state(event_id: int, visitor_id: int, new_state: str, db: Session = Depends(get_db)):
-    db_event_visitor = update_queue(db, event_id=event_id, visitor_id=visitor_id, new_state=new_state)
-    if db_event_visitor is None:
-        raise HTTPException(status_code=404, detail="Queue not found")
-    return db_event_visitor
+@router.post("/enter-gate")
+async def enter_gate(data: UpdateQueue, db: Session = Depends(get_db), user: Account = Depends(verify_token)):
+    return await update_state(db, user, data, QueueState.enter_gate)
+
+
+@router.post("/exit-gate")
+async def exit_gate(data: UpdateQueue, db: Session = Depends(get_db), user: Account = Depends(verify_token)):
+    return await update_state(db, user, data, QueueState.exit_gate)
+
+
+@router.get("/waiting")
+async def get_waiting(db: Session = Depends(get_db)):
+    return await get_by_status(db, QueueState.register)
+
+
+@router.get("/entered")
+async def get_entered(db: Session = Depends(get_db)):
+    return await get_by_status(db, QueueState.enter_gate)
+
+
+@router.get("/exited")
+async def get_exited(db: Session = Depends(get_db)):
+    return await get_by_status(db, QueueState.exit_gate)
