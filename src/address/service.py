@@ -1,37 +1,38 @@
 from sqlalchemy.orm import Session
 
 from src.address.models import Address
+from src.address.schemas import AddressCreate
 
 
-def create_address(db: Session, village: str, district: str, line: str):
-    db_address = Address(village=village, district=district, line=line)
-    db.add(db_address)
-    db.commit()
-    db.refresh(db_address)
-    return db_address
+async def add(db: Session, data: list[AddressCreate]):
+    try:
+        address_dict = [user.model_dump() for user in data]
+        db.bulk_save_objects(address_dict)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise e
+    return True
 
 
-def get_address(db: Session, address_id: int):
+async def get_by_id(db: Session, address_id: int) -> Address:
     return db.query(Address).filter(Address.id == address_id).first()
 
 
-def search(db: Session, keyword: str):
-    return db.query(Address).filter(
+async def search(db: Session, keyword: str) -> list[Address]:
+    addresses = db.query(Address).filter(
         (Address.village.ilike(f"%{keyword}%")) |
         (Address.district.ilike(f"%{keyword}%"))
     ).all()
+    return addresses
 
 
-def get_addresses(db: Session, skip: int = 0, limit: int = 10):
-    return db.query(Address).offset(skip).limit(limit).all()
-
-
-def update_address(db: Session, address_id: int, village: str, district: str, line: str):
+async def update(db: Session, address_id: int, data: AddressCreate):
     db_address = db.query(Address).filter(Address.id == address_id).first()
     if db_address:
-        db_address.village = village
-        db_address.district = district
-        db_address.line = line
+        db_address.village = data.village
+        db_address.district = data.district
+        db_address.line = data.line
         db.commit()
         db.refresh(db_address)
     return db_address
