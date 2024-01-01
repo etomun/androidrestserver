@@ -19,7 +19,7 @@ class VisitorQueue(Base):
     id = Column(String, primary_key=True, default=str(uuid.uuid4()), unique=True, nullable=False)
     event_id = Column(String, ForeignKey("events.id"), nullable=False)
     visitor_id = Column(String, ForeignKey("visitors.id"), nullable=False)
-    state = Column(Enum(QueueState), default=QueueState.register.value)
+    state = Column(Enum(QueueState), default=QueueState.register)
     timestamp = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationship with Event and Visitor
@@ -29,16 +29,19 @@ class VisitorQueue(Base):
     # Validate that the state is a valid QueueState value
     @validates('state')
     def validate_state(self, value):
-        current = self.state.value if self.state else None
-        valid_val = value in QueueState.__members__.values()
-        if current == QueueState.register.value:
-            valid_transition = value == QueueState.enter_gate.value
-        elif current == QueueState.enter_gate.value:
-            valid_transition = value == QueueState.exit_gate.value
+        current = self.state if self.state else None
+        valid_val = isinstance(value, QueueState)
+        if current == QueueState.register:
+            valid_transition = value is QueueState.enter_gate
+        elif current == QueueState.enter_gate:
+            valid_transition = value is QueueState.exit_gate
         else:
-            valid_transition = value == QueueState.register.value
+            valid_transition = value is QueueState.register
 
-        return valid_val and valid_transition
+        all_valid = valid_val and valid_transition
+        if not all_valid:
+            raise ValueError(f"Invalid status type. Expected {QueueState}, got {type(value)}")
+        return all_valid
 
     def update_state(self, value):
         self.state = value

@@ -15,7 +15,7 @@ async def add(db: Session, data: list[AddressCreate]):
     return True
 
 
-async def get_by_id(db: Session, address_id: int):
+async def get_by_id(db: Session, address_id: str):
     return db.query(Address).filter(Address.id == address_id).first()
 
 
@@ -27,7 +27,7 @@ async def search(db: Session, keyword: str):
     return addresses
 
 
-async def update(db: Session, address_id: int, data: AddressCreate):
+async def update(db: Session, address_id: str, data: AddressCreate):
     db_address = db.query(Address).filter(Address.id == address_id).first()
     if db_address:
         db_address.village = data.village

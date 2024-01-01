@@ -27,7 +27,7 @@ async def search_address(keyword: str = Query(..., min_length=3), db: Session = 
 
 
 @router.get("/{address_id}")
-async def get_address(address_id: int, db: Session = Depends(get_db)):
+async def get_address(address_id: str, db: Session = Depends(get_db)):
     db_address = get_by_id(db, address_id)
     if db_address is None:
         raise HTTPException(status_code=404, detail="Address not found")
@@ -35,7 +35,7 @@ async def get_address(address_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/update/{address_id}")
-async def update_address(address_id: int, data: AddressCreate, db: Session = Depends(get_db)):
+async def update_address(address_id: str, data: AddressCreate, db: Session = Depends(get_db)):
     db_address = update(db, address_id, data)
     if db_address is None:
         raise HTTPException(status_code=404, detail="Address not found")

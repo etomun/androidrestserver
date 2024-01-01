@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -13,16 +15,19 @@ router = APIRouter()
 
 @router.post("/add")
 async def add_queue(data: UpdateQueue, db: Session = Depends(get_db), user: Account = Depends(verify_token)):
-    return await add_new(db, user, data)
+    logging.info(user.id)
+    return await add_new(db, data)
 
 
 @router.post("/enter-gate")
 async def enter_gate(data: UpdateQueue, db: Session = Depends(get_db), user: Account = Depends(verify_token)):
-    return await update_state(db, user, data, QueueState.enter_gate)
+    logging.info(user.id)
+    return await update_state(db, data, QueueState.enter_gate)
 
 
 @router.post("/exit-gate")
 async def exit_gate(data: UpdateQueue, db: Session = Depends(get_db), user: Account = Depends(verify_token)):
+    logging.info(user.id)
     return await update_state(db, user, data, QueueState.exit_gate)
 
 

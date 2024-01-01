@@ -10,3 +10,6 @@ ALGORITHM = config('ALGORITHM')
 ADM_TOKEN_NAME = config('ADM_TOKEN_NAME')
 ADM_TOKEN_SUB = config('ADM_TOKEN_SUB')
 ADM_TOKEN = config('ADM_TOKEN')
+
+# Request
+DATE_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"

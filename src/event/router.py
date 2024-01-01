@@ -1,66 +1,56 @@
-from datetime import datetime
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from src.account.dependencies import verify_token
+from src.account.models import Account
 from src.database import get_db
-from src.event.service import create_event, get_event, get_events, update_event, start_event, stop_event
+from src.event.schemas import EventCreate
+from src.event.service import create, get_by_id, get_all, update, start, stop, cancel
 
 router = APIRouter()
 
 
-@router.post("/create")
-async def create_event_route(name: str, organizer: str, location: str, start_date: datetime, end_date: datetime,
-                             description: str,
-                             db: Session = Depends(get_db)):
-    return create_event(db, name=name, organizer=organizer, location=location, start_date=start_date, end_date=end_date,
-                        description=description)
-
-
 @router.get("/{event_id}")
-async def read_event(event_id: int, db: Session = Depends(get_db)):
-    db_event = get_event(db, event_id)
+async def get_event(event_id: str, db: Session = Depends(get_db)):
+    db_event = await get_by_id(db, event_id)
     if db_event is None:
         raise HTTPException(status_code=404, detail="Event not found")
     return db_event
 
 
 @router.get("/")
-async def get_all_events(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    return get_events(db, skip=skip, limit=limit)
+async def get_all_event(db: Session = Depends(get_db)):
+    return await get_all(db)
 
 
-@router.put("/{event_id}")
-async def update_event_route(event_id: int, name: str, organizer: str, location: str, start_date, end_date,
-                             description: str,
-                             db: Session = Depends(get_db)):
-    db_event = update_event(db, event_id, name=name, organizer=organizer, location=location, start_date=start_date,
-                            end_date=end_date, description=description)
-    if db_event is None:
-        raise HTTPException(status_code=404, detail="Event not found")
-    return db_event
+@router.post("/create")
+async def create_event(data: EventCreate, db: Session = Depends(get_db), user: Account = Depends(verify_token)):
+    logging.info(user.id)
+    return await create(db, data)
 
 
-@router.put("/start/{event_id}")
-async def start_event_route(event_id: int, db: Session = Depends(get_db)):
-    db_event = start_event(db, event_id)
-    if db_event is None:
-        raise HTTPException(status_code=404, detail="Event not found")
-    return db_event
+@router.post("/update/{event_id}")
+async def update_event(event_id: str, data: EventCreate, db: Session = Depends(get_db),
+                       user: Account = Depends(verify_token)):
+    logging.info(user.id)
+    return await update(db, event_id, data)
 
 
-@router.put("/stop/{event_id}")
-async def stop_event_route(event_id: int, db: Session = Depends(get_db)):
-    db_event = stop_event(db, event_id)
-    if db_event is None:
-        raise HTTPException(status_code=404, detail="Event not found")
-    return db_event
+@router.post("/start/{event_id}")
+async def start_event(event_id: str, db: Session = Depends(get_db), user: Account = Depends(verify_token)):
+    logging.info(user.id)
+    return await start(db, event_id)
 
 
-@router.put("/status/{event_id}", response_model=dict)
-async def get_event_status(event_id: int, db: Session = Depends(get_db)):
-    db_event = get_event(db, event_id)
-    if db_event is None:
-        raise HTTPException(status_code=404, detail="Event not found")
+@router.post("/stop/{event_id}")
+async def stop_event(event_id: str, db: Session = Depends(get_db), user: Account = Depends(verify_token)):
+    logging.info(user.id)
+    return await stop(db, event_id)
 
-    return {"status": db_event.status}
+
+@router.post("/cancel/{event_id}")
+async def cancel_event(event_id: str, db: Session = Depends(get_db), user: Account = Depends(verify_token)):
+    logging.info(user.id)
+    return await cancel(db, event_id)

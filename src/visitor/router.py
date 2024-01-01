@@ -10,7 +10,7 @@ router = APIRouter()
 
 @router.post("/register")
 async def register_visitor(data: VisitorCreate, db: Session = Depends(get_db)):
-    return add(db, data)
+    return await add(db, data)
 
 
 @router.get("/{visitor_code}")

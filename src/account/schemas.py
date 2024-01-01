@@ -1,10 +1,9 @@
 from pydantic import BaseModel
 
 from src.account.models import Account
-from src.schemes import ApiRequest
 
 
-class AccountLogin(ApiRequest):
+class AccountLogin(BaseModel):
     username: str
     password: str
 
@@ -14,20 +13,20 @@ class AccountCreate(AccountLogin):
     name: str
 
 
-class RefreshToken(ApiRequest):
+class RefreshToken(BaseModel):
     refresh_token: str
 
 
-class ChangePassword(ApiRequest):
+class ChangePassword(BaseModel):
     old_password: str
     new_password: str
 
 
-class ChangePhone(ApiRequest):
+class ChangePhone(BaseModel):
     new_phone: str
 
 
-class ChangeName(ApiRequest):
+class ChangeName(BaseModel):
     new_name: str
 
 

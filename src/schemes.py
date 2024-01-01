@@ -3,21 +3,9 @@ from typing import Optional, TypeVar, Generic
 
 from pydantic import BaseModel
 
-from src.utils import convert_datetime_to_gmt
+from src.utils import date_time_to_str_gmt
 
 T = TypeVar("T")
-
-
-class ApiRequest(BaseModel):
-    # @validator("*", pre=True, always=True)
-    # def validate_date_format(self, value, field):
-    #     if field.name == "date" and isinstance(value, str):
-    #         try:
-    #             return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S")
-    #         except ValueError:
-    #             raise ValueError("Invalid date format. Use '%Y-%m-%dT%H:%M:%S' in UTC.")
-    #     return value
-    pass
 
 
 class ApiResponse(BaseModel, Generic[T]):
@@ -42,7 +30,7 @@ class ApiResponse(BaseModel, Generic[T]):
 
     def _convert_datetime(self, value):
         if isinstance(value, datetime):
-            return convert_datetime_to_gmt(value)
+            return date_time_to_str_gmt(value)
         elif isinstance(value, list):
             return [self._convert_datetime(item) for item in value]
         elif isinstance(value, dict):

@@ -1,7 +1,7 @@
-from src.schemes import ApiRequest
+from pydantic import BaseModel
 
 
-class AddressCreate(ApiRequest):
+class AddressCreate(BaseModel):
     village: str
     district: str
     line: str
