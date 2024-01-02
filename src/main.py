@@ -2,7 +2,7 @@ import logging
 
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
-from starlette.responses import HTMLResponse
+from starlette.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles
 
 from src import account, visitor, address, event, queue
@@ -47,10 +47,18 @@ app.include_router(queue.router, prefix="/api/queue", tags=["Event Visitor Queue
 app.include_router(address.router, prefix="/api/address", tags=["Address"], dependencies=[Depends(verify_token)])
 app.include_router(visitor.router, prefix="/api/visitor", tags=["Visitor"], dependencies=[Depends(verify_token)])
 
-# Mount the dist directory containing the bundled SPA
-app.mount("/", StaticFiles(directory="web/dist"), name="static")
+# # Allow all origins for development, adjust this for production
+# origins = [
+#     "http://localhost:3000",  # Example ReactJS frontend origin
+#     "http://localhost:8000",  # Example FastAPI backend origin with default port
+# ]
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=["*"],
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
 
-
-@app.get("/")
-async def read_index():
-    return HTMLResponse(content=open("web/dist/index.html", "r").read())
+# Mount the ReactJS build directory as a static path
+app.mount("/", StaticFiles(directory="web/build", html=True), name="static")

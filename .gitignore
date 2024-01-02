@@ -10,3 +10,7 @@ visitmartahpura/
 # databases
 *.db
 
+# Frontend SPA
+/web/build/
+/web/dist/
+/web/node_modules/
