@@ -1,12 +1,21 @@
 from datetime import datetime
 
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
+from starlette import status
 
+from src.account.models import Account, Role
 from src.event.models import Event, EventState
 from src.event.schemas import EventCreate
 
 
-async def create(db: Session, data: EventCreate):
+async def create(db: Session, user: Account, data: EventCreate):
+    if user.role is not Role.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to create Event",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     db_event: Event = Event(name=data.name, organizer=data.organizer, location=data.location,
                             description=data.description)
     db_event.expected_start_date = data.expected_start_date

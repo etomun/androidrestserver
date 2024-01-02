@@ -27,8 +27,7 @@ async def get_all_event(db: Session = Depends(get_db)):
 
 @router.post("/create")
 async def create_event(data: EventCreate, db: Session = Depends(get_db), user: Account = Depends(verify_token)):
-    logging.info(user.id)
-    return await create(db, data)
+    return await create(db, user, data)
 
 
 @router.post("/update/{event_id}")

@@ -2,6 +2,7 @@ import uuid
 from enum import Enum
 
 from sqlalchemy import Column, String, Enum as SQLEnum
+from sqlalchemy.orm import relationship
 
 from src.database import Base
 
@@ -20,6 +21,8 @@ class Account(Base):
     name = Column(String, index=True)
     hashed_password = Column(String)
     role = Column(SQLEnum(Role), default=Role.USER, nullable=False)
+
+    events = relationship("Event", back_populates="creator")
 
     def set_as_admin(self):
         self.role = Role.ADMIN

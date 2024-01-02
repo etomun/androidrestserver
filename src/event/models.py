@@ -1,7 +1,7 @@
 import uuid
 from enum import Enum as PythonEnum
 
-from sqlalchemy import Column, String, DateTime, Enum
+from sqlalchemy import Column, String, DateTime, Enum, ForeignKey
 from sqlalchemy.orm import relationship, validates
 
 from src.database import Base
@@ -28,9 +28,13 @@ class Event(Base):
     organizer = Column(String)
     description = Column(String)
     status = Column(Enum(EventState), default=EventState.not_started)
+    creator_id = Column(String, ForeignKey("accounts.id"), index=True, nullable=False)
 
     # Relationship with VisitorQueue
     queue = relationship("VisitorQueue", back_populates="event")
+
+    # Relationship with Account
+    creator = relationship("Account", back_populates="events")
 
     @property
     def is_running(self):
