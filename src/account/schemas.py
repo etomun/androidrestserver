@@ -47,6 +47,7 @@ class AccountResponse(BaseModel):
 
 
 class LoginResponse(BaseModel):
+    id: str
     username: str
     phone: str
     name: str
@@ -54,4 +55,4 @@ class LoginResponse(BaseModel):
 
     @classmethod
     def from_account(cls, account: Account, token: TokenData):
-        return cls(username=account.username, phone=account.phone, name=account.name, token=token)
+        return cls(id=account.id, username=account.username, phone=account.phone, name=account.name, token=token)

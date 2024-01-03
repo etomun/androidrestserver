@@ -6,7 +6,7 @@ from src.account.schemas import AccountCreate, AccountLogin, ChangePassword, Cha
 from src.account.utils import hash_password, verify_password
 
 
-async def create(db: Session, data: AccountCreate):
+async def create(db: Session, data: AccountCreate, is_admin: bool = False):
     if db.query(Account).filter(Account.username == data.username).first():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken")
 
@@ -20,6 +20,8 @@ async def create(db: Session, data: AccountCreate):
         phone=data.phone,
         name=data.name
     )
+    if is_admin:
+        new_user.set_as_admin()
 
     db.add(new_user)
     db.commit()
@@ -29,13 +31,17 @@ async def create(db: Session, data: AccountCreate):
 
 async def authenticate(db: Session, data: AccountLogin) -> Account | None:
     user = db.query(Account).filter(Account.username == data.username).first()
-    if user and verify_password(data.password, user.hashed_password):
+    if not user:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "User Not Found")
+    if verify_password(data.password, user.hashed_password):
         return user
-    return None
 
 
 async def get_by_id(db: Session, uid: str):
-    return db.query(Account).filter(Account.id == uid).first()
+    user = db.query(Account).filter(Account.id == uid).first()
+    if not user:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "User Not Found")
+    return user
 
 
 async def get_accounts(db: Session, skip: int = 0, limit: int = 50):
@@ -43,53 +49,43 @@ async def get_accounts(db: Session, skip: int = 0, limit: int = 50):
 
 
 async def update_password(db: Session, data: ChangePassword, user: Account):
-    db_account = db.query(Account).filter(Account.id == user.id).first()
-    if not db_account:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    if verify_password(data.old_password, db_account.hashed_password):
-        db_account.hashed_password = hash_password(data.new_password)
+    user = db.query(Account).filter(Account.id == user.id).first()
+    if not user:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User Not Found")
+    if verify_password(data.old_password, user.hashed_password):
+        user.hashed_password = hash_password(data.new_password)
         db.commit()
-        db.refresh(db_account)
-        return db_account
+        db.refresh(user)
+        return user
     else:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Old password is not valid",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Old password is not valid")
 
 
 async def update_phone(db: Session, data: ChangePhone, user: Account):
-    db_account = db.query(Account).filter(Account.id == user.id).first()
-    db_account.phone = data.new_phone
+    user = db.query(Account).filter(Account.id == user.id).first()
+    if not user:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User Not Found")
+    user.phone = data.new_phone
     db.commit()
-    db.refresh(db_account)
-    return db_account
+    db.refresh(user)
+    return user
 
 
 async def update_name(db: Session, data: ChangeName, user: Account):
-    db_account = db.query(Account).filter(Account.id == user.id).first()
-    db_account.name = data.new_name
+    user = db.query(Account).filter(Account.id == user.id).first()
+    if not user:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User Not Found")
+    user.name = data.new_name
     db.commit()
-    db.refresh(db_account)
-    return db_account
+    db.refresh(user)
+    return user
 
 
 async def delete(db: Session, uid: str, user: Account) -> bool:
     db_user_account = db.query(Account).filter_by(id=user.id, role=user.role).first()
     db_target_account = db.query(Account).filter(Account.id == uid).first()
-
-    forbidden = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
     if db_user_account is None or db_target_account is None:
-        raise forbidden
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User Not Found")
 
     try:
         db.delete(db_user_account)

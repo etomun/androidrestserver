@@ -1,4 +1,6 @@
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
+from starlette import status
 
 from src.address.models import Address
 from src.address.schemas import AddressCreate
@@ -16,7 +18,9 @@ async def add(db: Session, data: list[AddressCreate]):
 
 
 async def get_by_id(db: Session, address_id: str):
-    return db.query(Address).filter(Address.id == address_id).first()
+    address = db.query(Address).filter(Address.id == address_id).first()
+    if not address:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Data not found")
 
 
 async def search(db: Session, keyword: str):
@@ -28,11 +32,13 @@ async def search(db: Session, keyword: str):
 
 
 async def update(db: Session, address_id: str, data: AddressCreate):
-    db_address = db.query(Address).filter(Address.id == address_id).first()
-    if db_address:
-        db_address.village = data.village
-        db_address.district = data.district
-        db_address.line = data.line
+    address = db.query(Address).filter(Address.id == address_id).first()
+    if not address:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Data not found")
+    if address:
+        address.village = data.village
+        address.district = data.district
+        address.line = data.line
         db.commit()
-        db.refresh(db_address)
-    return db_address.to_response()
+        db.refresh(address)
+    return address

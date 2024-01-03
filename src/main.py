@@ -1,16 +1,18 @@
 import logging
 
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, Request, status
+from fastapi.exceptions import RequestValidationError
+from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
-from starlette.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles
 
 from src import account, visitor, address, event, queue
 from src.account.dependencies import verify_token
 from src.database import init_db
+from src.event import EventCreate
 from src.exceptions import GeneralException
 
-app = FastAPI()
+app = FastAPI(title="Visit Marthapura")
 
 # Initialize the database tables
 init_db()
@@ -27,6 +29,13 @@ async def http_exception_handler(request, exc: HTTPException):
     logging.info(request)
     general_exc = GeneralException(exc.status_code, exc.detail, exc.status_code, exc.detail)
     return general_exc.as_response()
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    logging.info(request)
+    code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    return GeneralException(code, f'{exc.errors()}', code, exc.body).as_response()
 
 
 @app.exception_handler(Exception)
@@ -46,19 +55,6 @@ app.include_router(event.router, prefix="/api/event", tags=["Event"])
 app.include_router(queue.router, prefix="/api/queue", tags=["Event Visitor Queue"])
 app.include_router(address.router, prefix="/api/address", tags=["Address"], dependencies=[Depends(verify_token)])
 app.include_router(visitor.router, prefix="/api/visitor", tags=["Visitor"], dependencies=[Depends(verify_token)])
-
-# # Allow all origins for development, adjust this for production
-# origins = [
-#     "http://localhost:3000",  # Example ReactJS frontend origin
-#     "http://localhost:8000",  # Example FastAPI backend origin with default port
-# ]
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["*"],
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
 
 # Mount the ReactJS build directory as a static path
 app.mount("/", StaticFiles(directory="web/build", html=True), name="static")

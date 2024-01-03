@@ -1,5 +1,5 @@
 # venv
-visitmartahpura/
+/visitmartahpura/
 
 # cache
 *.pyc
@@ -9,8 +9,3 @@ visitmartahpura/
 
 # databases
 *.db
-
-# Frontend SPA
-/web/build/
-/web/dist/
-/web/node_modules/

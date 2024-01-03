@@ -1,11 +1,10 @@
 import uuid
 from enum import Enum as PythonEnum
 
-from sqlalchemy import Column, String, DateTime, Enum, ForeignKey
-from sqlalchemy.orm import relationship, validates
+from sqlalchemy import Column, String, DateTime, Enum, ForeignKey, func
+from sqlalchemy.orm import relationship
 
 from src.database import Base
-from src.utils import str_to_date_time_gmt
 
 
 class EventState(str, PythonEnum):
@@ -19,12 +18,13 @@ class Event(Base):
     __tablename__ = "events"
 
     id = Column(String, primary_key=True, default=str(uuid.uuid4()), unique=True, nullable=False)
-    name = Column(String, index=True, nullable=False)
+    name = Column(String, index=True, unique=True, nullable=False)
     location = Column(String, nullable=False)
     expected_start_date = Column(DateTime)
     expected_end_date = Column(DateTime)
     start_date = Column(DateTime)
     end_date = Column(DateTime)
+    last_updated = Column(DateTime, server_default=func.now(), onupdate=func.now())
     organizer = Column(String)
     description = Column(String)
     status = Column(Enum(EventState), default=EventState.not_started)
@@ -44,60 +44,18 @@ class Event(Base):
         """
         return self.actual_start_date is not None and self.actual_end_date is None and self.status == EventState.started
 
-    # Validate that the status is a valid EventState value
-    @validates('status')
-    def validate_status(self, value):
-        current = self.status if self.status else None
 
-        valid_val = isinstance(value, EventState)
-        if current == EventState.not_started:
-            valid_transition = value in (EventState.started, EventState.cancelled)
-        elif current == EventState.started:
-            valid_transition = value is EventState.finished
-        else:
-            valid_transition = False
+def validate_status(self, status):
+    current = self.status if self.status else None
+    valid_val = isinstance(status, EventState)
+    if current == EventState.not_started:
+        valid_transition = status in (EventState.started, EventState.cancelled)
+    elif current == EventState.started:
+        valid_transition = status is EventState.finished
+    else:
+        valid_transition = False
 
-        all_valid = valid_val and valid_transition
-        if not all_valid:
-            raise ValueError(f"Invalid status type. Expected {EventState}, got {type(value)}")
-        return all_valid
-
-    @validates('expected_start_date')
-    def validate_expected_start_date(self, key, value):
-        if value >= self.expected_end_date:
-            raise ValueError("Date cannot be on or after the end date.")
-
-        if value is None or isinstance(value, DateTime):
-            return value
-
-        return str_to_date_time_gmt(value)
-
-    @validates('expected_end_date')
-    def validate_expected_end_date(self, key, value):
-        if value <= self.expected_start_date:
-            raise ValueError("Date cannot be on or before the start date.")
-
-        if value is None or isinstance(value, DateTime):
-            return value
-
-        return str_to_date_time_gmt(value)
-
-    @validates('start_date')
-    def validate_start_date(self, key, value):
-        if value >= self.end_date:
-            raise ValueError("Date cannot be on or after the end date.")
-
-        if value is None or isinstance(value, DateTime):
-            return value
-
-        return str_to_date_time_gmt(value)
-
-    @validates('end_date')
-    def validate_end_date(self, key, value):
-        if value <= self.start_date:
-            raise ValueError("Date cannot be on or before the start date.")
-
-        if value is None or isinstance(value, DateTime):
-            return value
-
-        return str_to_date_time_gmt(value)
+    all_valid = valid_val and valid_transition
+    if not all_valid:
+        raise ValueError(f"Invalid status type. Expected {EventState}, got {type(value)}")
+    return all_valid
