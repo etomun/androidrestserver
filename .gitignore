@@ -1,5 +1,5 @@
 # venv
-/visitmartahpura/
+/visitmartahpura/**
 
 # cache
 *.pyc
@@ -9,3 +9,6 @@
 
 # databases
 *.db
+
+# qr images
+/src/_member_code/*

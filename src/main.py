@@ -2,15 +2,14 @@ import logging
 
 from fastapi import FastAPI, Depends, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
-from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 from starlette.staticfiles import StaticFiles
 
-from src import account, visitor, address, event, queue
-from src.account.dependencies import verify_token
+from src import account, member, address, event, queue
 from src.database import init_db
-from src.event import EventCreate
+from src.dependencies import verify_account, get_websocket_manager
 from src.exceptions import GeneralException
+from src.websocket import WSManager
 
 app = FastAPI(title="Visit Marthapura")
 
@@ -52,9 +51,19 @@ async def unhandled_exception_handler(request, exc: Exception):
 
 app.include_router(account.router, prefix="/api/auth", tags=["Account"])
 app.include_router(event.router, prefix="/api/event", tags=["Event"])
-app.include_router(queue.router, prefix="/api/queue", tags=["Event Visitor Queue"])
-app.include_router(address.router, prefix="/api/address", tags=["Address"], dependencies=[Depends(verify_token)])
-app.include_router(visitor.router, prefix="/api/visitor", tags=["Visitor"], dependencies=[Depends(verify_token)])
+app.include_router(queue.router, prefix="/api/queue", tags=["Queue of Visitor"])
+app.include_router(address.router, prefix="/api/address", tags=["Address"], dependencies=[Depends(verify_account)])
+app.include_router(member.router, prefix="/api/member", tags=["Member"], dependencies=[Depends(verify_account)])
+
+
+@app.post('/ws/broadcast', tags=['Test WebSocket'])
+async def ws_test_broadcast(message: str, ws_mgr: WSManager = Depends(get_websocket_manager)):
+    try:
+        await ws_mgr.broadcast(f"Coba broadcast websocket: {message}")
+        return {"status": "Message sent successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send message: {str(e)}")
+
 
 # Mount the ReactJS build directory as a static path
 app.mount("/", StaticFiles(directory="web/build", html=True), name="static")

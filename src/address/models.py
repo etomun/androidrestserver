@@ -9,10 +9,15 @@ from src.database import Base
 class Address(Base):
     __tablename__ = "addresses"
 
-    id = Column(String, primary_key=True, default=str(uuid.uuid4()), unique=True, nullable=False)
-    village = Column(String, index=True, nullable=False)
+    id = Column(String, primary_key=True, unique=True, nullable=False, default=lambda: uuid.uuid4().hex)
+    village = Column(String, index=True, unique=True, nullable=False)
+    sub_district = Column(String, index=True, nullable=False)
     district = Column(String, index=True, nullable=False)
-    line = Column(String, index=True)
+    regency = Column(String, nullable=False)
+    province = Column(String, nullable=False)
 
-    # Relationship with Visitor
-    visitors = relationship("Visitor", back_populates="address")
+    # Relationship with Member
+    members = relationship("Member", back_populates="address")
+
+    def to_dict(self):
+        return {column.name: getattr(self, column.name) for column in Address.__table__.columns}

@@ -2,63 +2,100 @@ import logging
 from typing import List
 
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from starlette.websockets import WebSocket, WebSocketDisconnect
 
-from src.account.dependencies import verify_token
 from src.account.models import Account
 from src.database import get_db
-from src.queue.models import QueueState
-from src.queue.schemas import UpdateQueue, VisitorQueueResponse
-from src.queue.service import update_state, add_new, get_by_status
+from src.dependencies import verify_account, verify_admin, get_websocket_manager
+from src.queue.dependencies import verify_queue_event_started
+from src.queue.schemas import QueueResponse
+from src.queue.service import *
 from src.schemes import ApiResponse
+from src.websocket import WSManager
 
 router = APIRouter()
 
 
-@router.post("/add", response_model=ApiResponse[VisitorQueueResponse])
-async def add_queue(data: UpdateQueue, db: Session = Depends(get_db), user: Account = Depends(verify_token)):
+@router.post("/add", response_model=ApiResponse[QueueResponse])
+async def add_queue(data: UpdateQueue, db: Session = Depends(get_db), user: Account = Depends(verify_account),
+                    ws_mgr: WSManager = Depends(get_websocket_manager)):
     logging.info(user.id)
+    event = await verify_queue_event_started(data.event_id, db)
     queue = await add_new(db, data)
-    return ApiResponse(data=VisitorQueueResponse.from_db(queue))
+    # Notify connected WebSocket clients about the update
+    await ws_mgr.broadcast(f"Queue updated for event_id: {event.name}")
+    return ApiResponse(data=QueueResponse.from_db(queue))
 
 
-@router.post("/enter-gate", response_model=ApiResponse[VisitorQueueResponse])
-async def enter_gate(data: UpdateQueue, db: Session = Depends(get_db), user: Account = Depends(verify_token)):
+@router.post("/enter-gate", response_model=ApiResponse[QueueResponse])
+async def enter_gate(data: UpdateQueue, db: Session = Depends(get_db), user: Account = Depends(verify_account),
+                     ws_mgr: WSManager = Depends(get_websocket_manager)):
     logging.info(user.id)
-    return await update_state(db, data, QueueState.enter_gate)
+    event = await verify_queue_event_started(data.event_id, db)
+    queue = await update_state(db, data, QueueState.enter_gate)
+
+    # Notify connected WebSocket clients about the update
+    await ws_mgr.broadcast(f"Queue updated for event_id: {event.name}")
+    return ApiResponse(data=QueueResponse.from_db(queue))
 
 
-@router.post("/exit-gate", response_model=ApiResponse[VisitorQueueResponse])
-async def exit_gate(data: UpdateQueue, db: Session = Depends(get_db), user: Account = Depends(verify_token)):
+@router.post("/exit-gate", response_model=ApiResponse[QueueResponse])
+async def exit_gate(data: UpdateQueue, db: Session = Depends(get_db), user: Account = Depends(verify_account),
+                    ws_mgr: WSManager = Depends(get_websocket_manager)):
     logging.info(user.id)
-    return await update_state(db, data, QueueState.exit_gate)
+    event = await verify_queue_event_started(data.event_id, db)
+    queue = await update_state(db, data, QueueState.exit_gate)
+
+    # Notify connected WebSocket clients about the update
+    await ws_mgr.broadcast(f"Queue updated for event_id: {event.name}")
+    return ApiResponse(data=QueueResponse.from_db(queue))
 
 
-@router.get("/waiting", response_model=ApiResponse[List[VisitorQueueResponse]])
+@router.get("/waiting/{event_id}", response_model=ApiResponse[List[QueueResponse]])
 async def get_waiting(event_id: str, limit: int, db: Session = Depends(get_db)):
-    queue = await get_by_status(db, event_id, QueueState.register, limit)
-    responses = [
-        VisitorQueueResponse.from_db(q, v, a)
-        for q, v, a in queue
-    ]
+    queue = await get_by_state(db, event_id, QueueState.register, limit)
+    responses = [QueueResponse.from_db(q) for q in queue]
     return ApiResponse(data=responses)
 
 
-@router.get("/entered", response_model=ApiResponse[List[VisitorQueueResponse]])
+@router.websocket("/ws/waiting/{event_id}")
+async def get_waiting(ws: WebSocket, event_id: str, ws_mgr: WSManager = Depends(get_websocket_manager)):
+    await ws_mgr.connect(ws)
+    try:
+        await ws_mgr.broadcast(f"Halo")
+        while True:
+            # Keep WebSocket connection alive
+            message = await ws.receive_text()
+            print(message)
+    except WebSocketDisconnect:
+        pass
+    finally:
+        ws_mgr.disconnect(ws)
+
+
+@router.get("/entered/{event_id}", response_model=ApiResponse[List[QueueResponse]])
 async def get_entered(event_id: str, limit: int, db: Session = Depends(get_db)):
-    queue = await get_by_status(db, event_id, QueueState.enter_gate, limit)
-    responses = [
-        VisitorQueueResponse.from_db(q, v, a)
-        for q, v, a in queue
-    ]
+    queue = await get_by_state(db, event_id, QueueState.enter_gate, limit)
+    responses = [QueueResponse.from_db(q) for q in queue]
     return ApiResponse(data=responses)
 
 
-@router.get("/exited", response_model=ApiResponse[List[VisitorQueueResponse]])
+@router.get("/exited/{event_id}", response_model=ApiResponse[List[QueueResponse]])
 async def get_exited(event_id: str, limit: int, db: Session = Depends(get_db)):
-    queue = await get_by_status(db, event_id, QueueState.exit_gate, limit)
-    responses = [
-        VisitorQueueResponse.from_db(q, v, a)
-        for q, v, a in queue
-    ]
+    queue = await get_by_state(db, event_id, QueueState.exit_gate, limit)
+    responses = [QueueResponse.from_db(q) for q in queue]
     return ApiResponse(data=responses)
+
+
+@router.post("/delete/{queue_id}", response_model=ApiResponse[bool])
+async def delete_queue(queue_id: str, db: Session = Depends(get_db), admin: Account = Depends(verify_admin)):
+    logging.info(admin.id)
+    success = await delete(db, queue_id)
+    return ApiResponse(data=success)
+
+
+@router.post('/clear')
+async def clear_queue(db: Session = Depends(get_db), user: Account = Depends(verify_admin)):
+    logging.info(user.username)
+    result = await clear(db)
+    return ApiResponse(data=result)

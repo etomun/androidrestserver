@@ -1,7 +1,7 @@
 import uuid
 from enum import Enum as PythonEnum
 
-from sqlalchemy import Column, String, DateTime, Enum, ForeignKey, func
+from sqlalchemy import Column, String, DateTime, Enum, ForeignKey, func, Boolean
 from sqlalchemy.orm import relationship
 
 from src.database import Base
@@ -17,7 +17,7 @@ class EventState(str, PythonEnum):
 class Event(Base):
     __tablename__ = "events"
 
-    id = Column(String, primary_key=True, default=str(uuid.uuid4()), unique=True, nullable=False)
+    id = Column(String, primary_key=True, unique=True, nullable=False, default=lambda: uuid.uuid4().hex)
     name = Column(String, index=True, unique=True, nullable=False)
     location = Column(String, nullable=False)
     expected_start_date = Column(DateTime)
@@ -28,6 +28,7 @@ class Event(Base):
     organizer = Column(String)
     description = Column(String)
     status = Column(Enum(EventState), default=EventState.not_started)
+    has_queue = Column(Boolean)
     creator_id = Column(String, ForeignKey("accounts.id"), index=True, nullable=False)
 
     # Relationship with VisitorQueue
@@ -37,12 +38,12 @@ class Event(Base):
     creator = relationship("Account", back_populates="events")
 
     @property
-    def is_running(self):
+    def is_event_running(self) -> bool:
         """
         Property to check if the event is currently running.
         Assumes that an event is running if the actual_start_date is set and the actual_end_date is not set.
         """
-        return self.actual_start_date is not None and self.actual_end_date is None and self.status == EventState.started
+        return self.start_date is not None and self.end_date is None and self.status == EventState.started
 
 
 def validate_status(self, status):
@@ -57,5 +58,5 @@ def validate_status(self, status):
 
     all_valid = valid_val and valid_transition
     if not all_valid:
-        raise ValueError(f"Invalid status type. Expected {EventState}, got {type(value)}")
+        raise ValueError(f"Invalid status type. Expected {EventState}, got {type(status)}")
     return all_valid

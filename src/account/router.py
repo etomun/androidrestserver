@@ -1,26 +1,38 @@
+import logging
+from typing import List
+
 from fastapi import APIRouter, Depends
 
-from src.account.dependencies import create_token, verify_token
+from src.account.dependencies import create_token
 from src.account.schemas import *
 from src.account.service import *
 from src.database import get_db
-from src.dependencies import verify_admin
+from src.dependencies import verify_token_su, verify_account, verify_admin
 from src.schemes import ApiResponse
 
 router = APIRouter()
 
 
 @router.post("/create-admin", response_model=ApiResponse[AccountResponse])
-async def create_admin_su(data: AccountCreate, db: Session = Depends(get_db), allowed=Depends(verify_admin)):
-    if allowed:
+async def create_admin_su(data: AccountCreate, db: Session = Depends(get_db), admin_only=Depends(verify_token_su)):
+    if admin_only:
         user = await create(db, data, True)
-        return ApiResponse(data=AccountResponse.from_account(account=user))
+        return ApiResponse(data=AccountResponse.from_db(account=user))
+    else:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not Allowed")
 
 
 @router.post("/create", response_model=ApiResponse[AccountResponse])
-async def create_account(data: AccountCreate, db: Session = Depends(get_db)):
-    user = await create(db, data)
-    return ApiResponse(data=AccountResponse.from_account(account=user))
+async def create_account(data: AccountCreate, db: Session = Depends(get_db), admin: Account = Depends(verify_admin)):
+    user = await create(db, data, False, pic_id=admin.id)
+    return ApiResponse(data=AccountResponse.from_db(account=user))
+
+
+@router.get("/fetch-accounts", response_model=ApiResponse[List[AccountResponse]])
+async def get_all_account(db: Session = Depends(get_db), admin: Account = Depends(verify_admin)):
+    logging.info(admin.username)
+    users = await get_accounts(db)
+    return ApiResponse(data=[AccountResponse.from_db(account=usr) for usr in users])
 
 
 @router.post("/login", response_model=ApiResponse[LoginResponse])
@@ -32,34 +44,45 @@ async def login(data: AccountLogin, db: Session = Depends(get_db)):
 
 @router.post("/token", response_model=ApiResponse[LoginResponse])
 async def refresh_token(data: RefreshToken, db: Session = Depends(get_db)):
-    user = await verify_token(db, data.refresh_token)
+    user = await verify_account(db, data.refresh_token)
+    if not user:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
     new_tokens = await create_token(user.username)
-    account_response = LoginResponse(username=user.username, phone=user.phone, name=user.name, token=new_tokens)
+    print(F'New Token {new_tokens}')
+    account_response = LoginResponse(id=user.id, username=user.username, phone=user.phone, name=user.name,
+                                     token=new_tokens)
     return ApiResponse(data=account_response)
 
 
 @router.post("/change-password", response_model=ApiResponse[AccountResponse])
-async def change_password(data: ChangePassword, user: Account = Depends(verify_token), db: Session = Depends(get_db)):
+async def change_password(data: ChangePassword, user: Account = Depends(verify_account), db: Session = Depends(get_db)):
     updated_user = await update_password(db, data, user)
     account_response = AccountResponse(username=updated_user.username, phone=updated_user.phone, name=updated_user.name)
     return ApiResponse(data=account_response)
 
 
 @router.post("/change-phone", response_model=ApiResponse[AccountResponse])
-async def change_phone(data: ChangePhone, user: Account = Depends(verify_token), db: Session = Depends(get_db)):
+async def change_phone(data: ChangePhone, user: Account = Depends(verify_account), db: Session = Depends(get_db)):
     updated_user = await update_phone(db, data, user)
     account_response = AccountResponse(username=updated_user.username, phone=updated_user.phone, name=updated_user.name)
     return ApiResponse(data=account_response)
 
 
 @router.post("/change-name", response_model=ApiResponse[AccountResponse])
-async def change_name(data: ChangeName, user: Account = Depends(verify_token), db: Session = Depends(get_db)):
+async def change_name(data: ChangeName, user: Account = Depends(verify_account), db: Session = Depends(get_db)):
     updated_user = await update_name(db, data, user)
     account_response = AccountResponse(username=updated_user.username, phone=updated_user.phone, name=updated_user.name)
     return ApiResponse(data=account_response)
 
 
 @router.post("/delete/{uid}", response_model=ApiResponse[bool])
-async def delete_account(uid: str, user: Account = Depends(verify_token), db: Session = Depends(get_db)):
+async def delete_account(uid: str, user: Account = Depends(verify_account), db: Session = Depends(get_db)):
     succeed = await delete(db, uid, user)
     return ApiResponse(data={succeed: succeed})
+
+
+@router.post('/clear')
+async def clear_accounts(db: Session = Depends(get_db), user: Account = Depends(verify_admin)):
+    logging.info(user.username)
+    result = await clear(db)
+    return ApiResponse(data=result)

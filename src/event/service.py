@@ -4,31 +4,25 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session, joinedload
 from starlette import status
 
-from src.account.models import Account, Role
+from src.account.models import Account
 from src.event.models import Event, EventState
 from src.event.schemas import EventCreate
 from src.utils import str_to_date_time_gmt
 
 
 async def create(db: Session, user: Account, data: EventCreate):
-    if user.role is not Role.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have permission to create Event",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
     db_event: Event = Event(name=data.name, organizer=data.organizer, location=data.location,
-                            description=data.description, creator_id=user.id)
+                            description=data.description, has_queue=data.has_queue, creator_id=user.id)
     db_event.expected_start_date = str_to_date_time_gmt(data.expected_start_date)
     db_event.expected_end_date = str_to_date_time_gmt(data.expected_end_date)
     db.add(db_event)
     db.commit()
     db.refresh(db_event)
-    return db.query(Event).filter(Event.id == db_event.id).options(joinedload(Event.creator)).first()
+    return db.query(Event).filter_by(id=db_event.id).options(joinedload(Event.creator)).first()
 
 
 async def delete_by_id(db: Session, event_id: str) -> bool:
-    event = db.query(Event).filter(Event.id == event_id).first()
+    event = db.query(Event).filter_by(id=event_id).first()
     if event is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -44,12 +38,12 @@ async def delete_by_id(db: Session, event_id: str) -> bool:
         return False
 
 
-async def get_by_id(db: Session, event_id: str) -> Event:
-    return db.query(Event).filter(Event.id == event_id).options(joinedload(Event.creator)).first()
+async def get_by_id(db: Session, event_id: str):
+    return db.query(Event).filter_by(id=event_id).options(joinedload(Event.creator)).first()
 
 
-async def get_by_name(db: Session, event_name: str) -> Event:
-    return db.query(Event).filter(Event.name == event_name).options(joinedload(Event.creator)).first()
+async def get_by_name(db: Session, event_name: str):
+    return db.query(Event).filter_by(name=event_name).options(joinedload(Event.creator)).first()
 
 
 async def get_all(db: Session):
@@ -59,7 +53,13 @@ async def get_all(db: Session):
 
 
 async def start(db: Session, event_id: str):
-    db_event: Event = db.query(Event).filter(Event.id == event_id).first()
+    db_event = db.query(Event).filter_by(id=event_id).first()
+    if db_event.status is EventState.started:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Event has been started before")
+    if db_event.status is EventState.finished:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Event has been finished")
+    if db_event.status is EventState.cancelled:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Event has been cancelled")
     if db_event:
         db_event.status = EventState.started
         db_event.start_date = datetime.utcnow()
@@ -70,7 +70,13 @@ async def start(db: Session, event_id: str):
 
 
 async def stop(db: Session, event_id: str):
-    db_event: Event = db.query(Event).filter(Event.id == event_id).first()
+    db_event = db.query(Event).filter_by(id=event_id).first()
+    if db_event.status is EventState.not_started:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Event is not started yet")
+    if db_event.status is EventState.finished:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Event has been finished before")
+    if db_event.status is EventState.cancelled:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Event has been cancelled")
     if db_event:
         db_event.status = EventState.finished
         db_event.end_date = datetime.utcnow()
@@ -80,7 +86,13 @@ async def stop(db: Session, event_id: str):
 
 
 async def cancel(db: Session, event_id: str):
-    db_event: Event = db.query(Event).filter(Event.id == event_id).first()
+    db_event = db.query(Event).filter_by(id=event_id).first()
+    if db_event.status is EventState.started:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Event has been started")
+    if db_event.status is EventState.finished:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Event has been finished")
+    if db_event.status is EventState.cancelled:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Event has been cancelled before")
     if db_event:
         db_event.status = EventState.cancelled
         db_event.start_date = None
@@ -91,9 +103,26 @@ async def cancel(db: Session, event_id: str):
 
 
 async def update(db: Session, event_id: str, data: EventCreate):
-    db_event: Event = db.query(Event).filter(Event.id == event_id).first()
-    if db_event:
-        for attr, value in data.model_dump().items():
-            if value is not None:
-                setattr(db_event, attr, value)
+    try:
+        db_event = db.query(Event).filter_by(id=event_id).first()
+        if db_event:
+            for attr, value in data.model_dump().items():
+                if value is not None:
+                    if attr in ['expected_start_date', 'expected_end_date']:
+                        value = str_to_date_time_gmt(value)
+                    setattr(db_event, attr, value)
+            db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"Error updating event in the database: {e}")
     return db_event
+
+
+async def clear(db: Session):
+    try:
+        db.execute(Event.__table__.delete())
+        db.commit()
+        return {"message": "Table cleared successfully."}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error clearing table: {str(e)}")

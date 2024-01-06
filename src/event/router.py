@@ -2,27 +2,19 @@ import logging
 from typing import List
 
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
 
-from src.account.dependencies import verify_token
-from src.account.models import Account
 from src.database import get_db
-from src.event.schemas import EventCreate, EventResponse
-from src.event.service import create, get_by_id, get_all, update, start, stop, cancel, delete_by_id, get_by_name
+from src.dependencies import verify_admin
+from src.event.schemas import EventResponse
+from src.event.service import *
 from src.schemes import ApiResponse
 from src.utils import str_to_date_time_gmt
 
 router = APIRouter()
 
 
-@router.get("/{event_id}", response_model=ApiResponse[EventResponse])
-async def get_event(event_id: str, db: Session = Depends(get_db)):
-    event = await get_by_id(db, event_id)
-    return ApiResponse(data=EventResponse.from_db(event))
-
-
-@router.get("/", response_model=ApiResponse[List[EventResponse]])
-async def get_all_event(db: Session = Depends(get_db)):
+@router.get("", response_model=ApiResponse[List[EventResponse]])
+async def get_all_events(db: Session = Depends(get_db)):
     events = await get_all(db)
     responses = [
         EventResponse.from_db(event)
@@ -31,46 +23,60 @@ async def get_all_event(db: Session = Depends(get_db)):
     return ApiResponse(data=responses)
 
 
+@router.get("/{event_id}", response_model=ApiResponse[EventResponse])
+async def get_event(event_id: str, db: Session = Depends(get_db)):
+    event = await get_by_id(db, event_id)
+    return ApiResponse(data=EventResponse.from_db(event))
+
+
 @router.post("/create", response_model=ApiResponse[EventResponse])
-async def create_event(data: EventCreate, db: Session = Depends(get_db), user: Account = Depends(verify_token)):
+async def create_event(data: EventCreate, db: Session = Depends(get_db), admin: Account = Depends(verify_admin)):
     if await get_by_name(db, data.name):
         raise ValueError("Event Name is already registered")
     if str_to_date_time_gmt(data.expected_end_date) <= str_to_date_time_gmt(data.expected_start_date):
         raise ValueError("Expected start date cannot be on or after the end date.")
-    event = await create(db, user, data)
+    event = await create(db, admin, data)
     return ApiResponse(data=EventResponse.from_db(event))
 
 
 @router.post("/delete/{event_id}", response_model=ApiResponse[bool])
-async def delete_event(event_id: str, db: Session = Depends(get_db), user: Account = Depends(verify_token)):
-    logging.info(user.name)
+async def delete_event(event_id: str, db: Session = Depends(get_db), admin: Account = Depends(verify_admin)):
+    logging.info(admin.id)
     response = await delete_by_id(db, event_id)
     return ApiResponse(data=response)
 
 
 @router.post("/update/{event_id}", response_model=ApiResponse[EventResponse])
 async def update_event(event_id: str, data: EventCreate, db: Session = Depends(get_db),
-                       user: Account = Depends(verify_token)):
-    logging.info(user.id)
+                       admin: Account = Depends(verify_admin)):
+    logging.info(admin.id)
     event = await update(db, event_id, data)
     return ApiResponse(data=EventResponse.from_db(event))
 
 
 @router.post("/start/{event_id}", response_model=ApiResponse[EventResponse])
-async def start_event(event_id: str, db: Session = Depends(get_db), user: Account = Depends(verify_token)):
-    logging.info(user.id)
-    return await start(db, event_id)
+async def start_event(event_id: str, db: Session = Depends(get_db), admin: Account = Depends(verify_admin)):
+    logging.info(admin.id)
+    event = await start(db, event_id)
+    return ApiResponse(data=EventResponse.from_db(event))
 
 
 @router.post("/stop/{event_id}", response_model=ApiResponse[EventResponse])
-async def stop_event(event_id: str, db: Session = Depends(get_db), user: Account = Depends(verify_token)):
-    logging.info(user.id)
+async def stop_event(event_id: str, db: Session = Depends(get_db), admin: Account = Depends(verify_admin)):
+    logging.info(admin.id)
     event = await stop(db, event_id)
     return ApiResponse(data=EventResponse.from_db(event))
 
 
 @router.post("/cancel/{event_id}", response_model=ApiResponse[EventResponse])
-async def cancel_event(event_id: str, db: Session = Depends(get_db), user: Account = Depends(verify_token)):
-    logging.info(user.id)
+async def cancel_event(event_id: str, db: Session = Depends(get_db), admin: Account = Depends(verify_admin)):
+    logging.info(admin.id)
     event = await cancel(db, event_id)
     return ApiResponse(data=EventResponse.from_db(event))
+
+
+@router.post('/clear')
+async def clear_events(db: Session = Depends(get_db), user: Account = Depends(verify_admin)):
+    logging.info(user.username)
+    result = await clear(db)
+    return ApiResponse(data=result)

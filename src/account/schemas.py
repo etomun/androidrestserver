@@ -42,7 +42,7 @@ class AccountResponse(BaseModel):
     name: str
 
     @classmethod
-    def from_account(cls, account: Account):
+    def from_db(cls, account: Account):
         return cls(username=account.username, phone=account.phone, name=account.name)
 
 

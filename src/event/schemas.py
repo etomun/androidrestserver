@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from pydantic.v1 import root_validator
 
 from src.event.models import Event
-from src.utils import str_to_date_time_gmt
+from src.utils import str_to_date_time_gmt, date_time_to_str_gmt
 
 
 class EventCreate(BaseModel):
@@ -12,6 +12,7 @@ class EventCreate(BaseModel):
     expected_end_date: str
     organizer: str
     description: str
+    has_queue: bool
 
     # NOT CALLED https://github.com/pydantic/pydantic/issues/3821, call manually in router
     @root_validator
@@ -40,19 +41,24 @@ class EventResponse(EventCreate):
     id: str
     status: str
     last_updated: str
+    start_date: str
+    end_date: str
     creator: EventCreator
 
     @classmethod
     def from_db(cls, event: Event):
         return cls(id=event.id,
                    status=event.status.value,
-                   last_updated=event.last_updated,
+                   last_updated=date_time_to_str_gmt(event.last_updated),
+                   start_date=date_time_to_str_gmt(event.start_date),
+                   end_date=date_time_to_str_gmt(event.end_date),
                    name=event.name,
                    location=event.location,
-                   expected_start_date=str(event.expected_start_date),
-                   expected_end_date=str(event.expected_end_date),
+                   expected_start_date=date_time_to_str_gmt(event.expected_start_date),
+                   expected_end_date=date_time_to_str_gmt(event.expected_end_date),
                    organizer=event.organizer,
                    description=event.description,
+                   has_queue=event.has_queue,
                    creator=EventCreator(
                        id=event.creator.id,
                        username=event.creator.username,

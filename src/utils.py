@@ -4,9 +4,12 @@ from src.config import DATE_TIME_FORMAT
 
 
 def date_time_to_str_gmt(value: datetime) -> str:
-    if not value.tzinfo:
-        value = value.replace(tzinfo=timezone.utc)
-    return value.strftime(DATE_TIME_FORMAT)
+    try:
+        if not value.tzinfo:
+            value = value.replace(tzinfo=timezone.utc)
+        return value.strftime(DATE_TIME_FORMAT)
+    except:
+        return ""
 
 
 def str_to_date_time_gmt(value) -> datetime:

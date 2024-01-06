@@ -6,11 +6,11 @@ from src.account.schemas import AccountCreate, AccountLogin, ChangePassword, Cha
 from src.account.utils import hash_password, verify_password
 
 
-async def create(db: Session, data: AccountCreate, is_admin: bool = False):
-    if db.query(Account).filter(Account.username == data.username).first():
+async def create(db: Session, data: AccountCreate, is_admin: bool = False, pic_id: str = ""):
+    if db.query(Account).filter_by(username=data.username).first():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken")
 
-    if db.query(Account).filter(Account.phone == data.phone).first():
+    if db.query(Account).filter_by(phone=data.phone).first():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Phone already registered")
 
     hashed_password = hash_password(data.password)
@@ -18,7 +18,8 @@ async def create(db: Session, data: AccountCreate, is_admin: bool = False):
         username=data.username,
         hashed_password=hashed_password,
         phone=data.phone,
-        name=data.name
+        name=data.name,
+        pic_id=pic_id
     )
     if is_admin:
         new_user.set_as_admin()
@@ -29,8 +30,8 @@ async def create(db: Session, data: AccountCreate, is_admin: bool = False):
     return new_user
 
 
-async def authenticate(db: Session, data: AccountLogin) -> Account | None:
-    user = db.query(Account).filter(Account.username == data.username).first()
+async def authenticate(db: Session, data: AccountLogin):
+    user = db.query(Account).filter_by(username=data.username).first()
     if not user:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "User Not Found")
     if verify_password(data.password, user.hashed_password):
@@ -38,14 +39,14 @@ async def authenticate(db: Session, data: AccountLogin) -> Account | None:
 
 
 async def get_by_id(db: Session, uid: str):
-    user = db.query(Account).filter(Account.id == uid).first()
+    user = db.query(Account).filter_by(id=uid).first()
     if not user:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "User Not Found")
     return user
 
 
-async def get_accounts(db: Session, skip: int = 0, limit: int = 50):
-    return db.query(Account).offset(skip).limit(limit).all()
+async def get_accounts(db: Session):
+    return db.query(Account).all()
 
 
 async def update_password(db: Session, data: ChangePassword, user: Account):
@@ -93,3 +94,13 @@ async def delete(db: Session, uid: str, user: Account) -> bool:
         return True
     except:
         return False
+
+
+async def clear(db: Session):
+    try:
+        db.execute(Account.__table__.delete())
+        db.commit()
+        return {"message": "Table cleared successfully."}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error clearing table: {str(e)}")

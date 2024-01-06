@@ -1,39 +1,52 @@
-import logging
-
-from fastapi import Depends, HTTPException, Request
+from fastapi import HTTPException, Request, Depends
+from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
+from sqlalchemy.orm import Session
 from starlette import status
 
-from src.config import ADM_TOKEN_NAME, JWT_SECRET_KEY, ALGORITHM, ADM_TOKEN_SUB, ADM_TOKEN
+from src.account.models import Account, Role
+from src.config import ADM_TOKEN_NAME, ADM_TOKEN, JWT_SECRET_KEY, ALGORITHM
+from src.constants import SUBJECT
+from src.database import get_db
+from src.websocket import WSManager
 
 
-def verify_admin(request: Request):
-    if request.headers.get(ADM_TOKEN_NAME) != ADM_TOKEN:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate admin credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return True
+# Web Socket
+
+async def get_websocket_manager():
+    return WSManager()
 
 
-async def verify_admin_token(token: str = Depends(lambda x: x.headers.get(ADM_TOKEN_NAME))):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate admin credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+# JWT Token
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-    logging.error(f"admin token {token}")
+
+async def verify_account(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(status.HTTP_401_UNAUTHORIZED, "Could not validate credentials")
+
     try:
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
-        adm_key: str = payload.get(ADM_TOKEN_SUB)
-        logging.error(f"admin payload {payload}")
-        if adm_key is None or adm_key != ADM_TOKEN:
-            logging.error("admin Satu")
+        username: str = payload.get(SUBJECT)
+        if username is None:
             raise credentials_exception
     except JWTError:
-        logging.error("admin Dua")
         raise credentials_exception
 
+    user = db.query(Account).filter_by(username=username).first()
+    if user is None:
+        raise credentials_exception
+
+    return user
+
+
+def verify_token_su(request: Request):
+    if request.headers.get(ADM_TOKEN_NAME) != ADM_TOKEN:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Could not validate admin credentials")
     return True
+
+
+def verify_admin(user: Account = Depends(verify_account)):
+    if user.role is Role.ADMIN:
+        return user
+    else:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "You have no permissions to perform this action")
