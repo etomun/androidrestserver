@@ -57,12 +57,11 @@ app.include_router(member.router, prefix="/api/member", tags=["Member"], depende
 
 
 @app.post('/ws/broadcast', tags=['Test WebSocket'])
-async def ws_test_broadcast(message: str, ws_mgr: WSManager = Depends(get_websocket_manager)):
-    try:
-        await ws_mgr.broadcast(f"Coba broadcast websocket: {message}")
-        return {"status": "Message sent successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to send message: {str(e)}")
+async def ws_test_broadcast(event_id: str, message: str, ws_mgr: WSManager = Depends(get_websocket_manager)):
+    await ws_mgr.send_message(event_id, {
+        "event_id": event_id,
+        "message": f"Test websocket {message} of {event_id}"
+    })
 
 
 # Mount the ReactJS build directory as a static path

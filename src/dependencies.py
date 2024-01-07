@@ -10,11 +10,13 @@ from src.constants import SUBJECT
 from src.database import get_db
 from src.websocket import WSManager
 
-
 # Web Socket
 
+ws_manager = WSManager()
+
+
 async def get_websocket_manager():
-    return WSManager()
+    return ws_manager
 
 
 # JWT Token

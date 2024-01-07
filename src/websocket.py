@@ -1,17 +1,22 @@
+from typing import Dict, Set, Any
+
 from fastapi import WebSocket
+
+TopicConnections = Dict[str, Set[WebSocket]]
+TopicPayload = Any
 
 
 class WSManager:
     def __init__(self):
-        self.connections = []
+        self.active_connections: TopicConnections = {}
 
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.connections.append(websocket)
+    async def connect(self, topic_id: str, ws: WebSocket):
+        self.active_connections.setdefault(topic_id, set()).add(ws)
 
-    def disconnect(self, websocket: WebSocket):
-        self.connections.remove(websocket)
+    async def disconnect(self, topic_id: str, ws: WebSocket):
+        if topic_id in self.active_connections:
+            self.active_connections[topic_id].discard(ws)
 
-    async def broadcast(self, message: str):
-        for connection in self.connections:
-            await connection.send_text(message)
+    async def send_message(self, topic_id: str, message: TopicPayload):
+        for ws in self.active_connections.get(topic_id, []):
+            await ws.send_json(message)

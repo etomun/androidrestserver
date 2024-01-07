@@ -1,10 +1,10 @@
+import asyncio
 import logging
 from typing import List
 
 from fastapi import APIRouter, Depends
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
-from src.account.models import Account
 from src.database import get_db
 from src.dependencies import verify_account, verify_admin, get_websocket_manager
 from src.queue.dependencies import verify_queue_event_started
@@ -21,9 +21,13 @@ async def add_queue(data: UpdateQueue, db: Session = Depends(get_db), user: Acco
                     ws_mgr: WSManager = Depends(get_websocket_manager)):
     logging.info(user.id)
     event = await verify_queue_event_started(data.event_id, db)
-    queue = await add_new(db, data)
-    # Notify connected WebSocket clients about the update
-    await ws_mgr.broadcast(f"Queue updated for event_id: {event.name}")
+    queue = await add_new(db, user, data)
+    message_payload = {
+        "event_id": event.id,
+        "message": f"{queue.member.name} just arrived to {queue.event.name}"
+    }
+    await ws_mgr.send_message(event.id, message_payload)
+
     return ApiResponse(data=QueueResponse.from_db(queue))
 
 
@@ -34,8 +38,10 @@ async def enter_gate(data: UpdateQueue, db: Session = Depends(get_db), user: Acc
     event = await verify_queue_event_started(data.event_id, db)
     queue = await update_state(db, data, QueueState.enter_gate)
 
-    # Notify connected WebSocket clients about the update
-    await ws_mgr.broadcast(f"Queue updated for event_id: {event.name}")
+    await ws_mgr.send_message(event.id, {
+        "event_id": event.id,
+        "message": f"{queue.member.name} just entered the Gate of {queue.event.name}"
+    })
     return ApiResponse(data=QueueResponse.from_db(queue))
 
 
@@ -46,45 +52,39 @@ async def exit_gate(data: UpdateQueue, db: Session = Depends(get_db), user: Acco
     event = await verify_queue_event_started(data.event_id, db)
     queue = await update_state(db, data, QueueState.exit_gate)
 
-    # Notify connected WebSocket clients about the update
-    await ws_mgr.broadcast(f"Queue updated for event_id: {event.name}")
+    await ws_mgr.send_message(event.id, {
+        "event_id": event.id,
+        "message": f"{queue.member.name} just exited the Gate of {queue.event.name}"
+    })
+
     return ApiResponse(data=QueueResponse.from_db(queue))
 
 
 @router.get("/waiting/{event_id}", response_model=ApiResponse[List[QueueResponse]])
-async def get_waiting(event_id: str, limit: int, db: Session = Depends(get_db)):
+async def get_waiting(event_id: str, limit: int = 50, db: Session = Depends(get_db)):
     queue = await get_by_state(db, event_id, QueueState.register, limit)
-    responses = [QueueResponse.from_db(q) for q in queue]
-    return ApiResponse(data=responses)
-
-
-@router.websocket("/ws/waiting/{event_id}")
-async def get_waiting(ws: WebSocket, event_id: str, ws_mgr: WSManager = Depends(get_websocket_manager)):
-    await ws_mgr.connect(ws)
-    try:
-        await ws_mgr.broadcast(f"Halo")
-        while True:
-            # Keep WebSocket connection alive
-            message = await ws.receive_text()
-            print(message)
-    except WebSocketDisconnect:
-        pass
-    finally:
-        ws_mgr.disconnect(ws)
+    if not queue:
+        return ApiResponse(data=None, error_message="Queue not found")
+    else:
+        return ApiResponse(data=[QueueResponse.from_db(q) for q in queue])
 
 
 @router.get("/entered/{event_id}", response_model=ApiResponse[List[QueueResponse]])
-async def get_entered(event_id: str, limit: int, db: Session = Depends(get_db)):
+async def get_entered(event_id: str, limit: int = 50, db: Session = Depends(get_db)):
     queue = await get_by_state(db, event_id, QueueState.enter_gate, limit)
-    responses = [QueueResponse.from_db(q) for q in queue]
-    return ApiResponse(data=responses)
+    if not queue:
+        return ApiResponse(data=None, error_message="Queue not found")
+    else:
+        return ApiResponse(data=[QueueResponse.from_db(q) for q in queue])
 
 
 @router.get("/exited/{event_id}", response_model=ApiResponse[List[QueueResponse]])
-async def get_exited(event_id: str, limit: int, db: Session = Depends(get_db)):
+async def get_exited(event_id: str, limit: int = 50, db: Session = Depends(get_db)):
     queue = await get_by_state(db, event_id, QueueState.exit_gate, limit)
-    responses = [QueueResponse.from_db(q) for q in queue]
-    return ApiResponse(data=responses)
+    if not queue:
+        return ApiResponse(data=None, error_message="Queue not found")
+    else:
+        return ApiResponse(data=[QueueResponse.from_db(q) for q in queue])
 
 
 @router.post("/delete/{queue_id}", response_model=ApiResponse[bool])
@@ -99,3 +99,29 @@ async def clear_queue(db: Session = Depends(get_db), user: Account = Depends(ver
     logging.info(user.username)
     result = await clear(db)
     return ApiResponse(data=result)
+
+
+@router.websocket("/ws/{event_id}")
+async def listen_queue(ws: WebSocket, event_id: str, ws_mgr: WSManager = Depends(get_websocket_manager),
+                       db: Session = Depends(get_db)):
+    try:
+        # Verify the event and decide whether to accept or close the connection
+        event = await verify_queue_event_started(event_id, db)
+        if event is None:
+            await ws.close(reason="Event is not started")
+            return
+
+        # Accept the WebSocket connection
+        await ws.accept()
+
+        # Connect the WebSocket to the manager
+        await ws_mgr.connect(event_id, ws)
+
+        # Main loop to handle WebSocket messages
+        while True:
+            await asyncio.sleep(1)
+            await ws.receive_json()
+
+    except WebSocketDisconnect:
+        # Handle disconnect
+        await ws_mgr.disconnect(event_id, ws)

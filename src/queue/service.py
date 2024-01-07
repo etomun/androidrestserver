@@ -3,16 +3,18 @@ from sqlalchemy import desc
 from sqlalchemy.orm import Session, joinedload
 from starlette import status
 
+from src.account import Account
 from src.member.models import Member
 from src.queue.models import VisitorQueue, QueueState
 from src.queue.schemas import UpdateQueue
 
 
-async def add_new(db: Session, data: UpdateQueue):
+async def add_new(db: Session, pic: Account, data: UpdateQueue):
     queue = db.query(VisitorQueue).filter_by(event_id=data.event_id, member_code=data.member_code).first()
     if queue:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Visitor already in queue")
-    queue = VisitorQueue(event_id=data.event_id, member_code=data.member_code, state=QueueState.register)
+    queue = VisitorQueue(event_id=data.event_id, member_code=data.member_code, queue_pic_id=pic.id,
+                         state=QueueState.register)
     db.add(queue)
     db.commit()
     db.refresh(queue)

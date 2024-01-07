@@ -32,47 +32,57 @@ async def create_account(data: AccountCreate, db: Session = Depends(get_db), adm
 async def get_all_account(db: Session = Depends(get_db), admin: Account = Depends(verify_admin)):
     logging.info(admin.username)
     users = await get_accounts(db)
-    return ApiResponse(data=[AccountResponse.from_db(account=usr) for usr in users])
+    if not users:
+        return ApiResponse(data=[], error_message="Users not found")
+    else:
+        return ApiResponse(data=[AccountResponse.from_db(account=usr) for usr in users])
 
 
 @router.post("/login", response_model=ApiResponse[LoginResponse])
 async def login(data: AccountLogin, db: Session = Depends(get_db)):
     user = await authenticate(db, data)
-    token = await create_token(user.username)
-    return ApiResponse(data=LoginResponse.from_account(account=user, token=token))
+    if not user:
+        return ApiResponse(data=None, error_message="User not found")
+    else:
+        token = await create_token(user.username)
+        return ApiResponse(data=LoginResponse.from_account(account=user, token=token))
 
 
 @router.post("/token", response_model=ApiResponse[LoginResponse])
 async def refresh_token(data: RefreshToken, db: Session = Depends(get_db)):
     user = await verify_account(db, data.refresh_token)
     if not user:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
-    new_tokens = await create_token(user.username)
-    print(F'New Token {new_tokens}')
-    account_response = LoginResponse(id=user.id, username=user.username, phone=user.phone, name=user.name,
-                                     token=new_tokens)
-    return ApiResponse(data=account_response)
+        return ApiResponse(data=None, error_message="User not found")
+    else:
+        new_tokens = await create_token(user.username)
+        return ApiResponse(data=LoginResponse.from_account(account=user, token=new_tokens))
 
 
 @router.post("/change-password", response_model=ApiResponse[AccountResponse])
 async def change_password(data: ChangePassword, user: Account = Depends(verify_account), db: Session = Depends(get_db)):
     updated_user = await update_password(db, data, user)
-    account_response = AccountResponse(username=updated_user.username, phone=updated_user.phone, name=updated_user.name)
-    return ApiResponse(data=account_response)
+    if not updated_user:
+        return ApiResponse(data=None, error_message="User not found")
+    else:
+        return ApiResponse(data=AccountResponse.from_db(updated_user))
 
 
 @router.post("/change-phone", response_model=ApiResponse[AccountResponse])
 async def change_phone(data: ChangePhone, user: Account = Depends(verify_account), db: Session = Depends(get_db)):
     updated_user = await update_phone(db, data, user)
-    account_response = AccountResponse(username=updated_user.username, phone=updated_user.phone, name=updated_user.name)
-    return ApiResponse(data=account_response)
+    if not updated_user:
+        return ApiResponse(data=None, error_message="User not found")
+    else:
+        return ApiResponse(data=AccountResponse.from_db(updated_user))
 
 
 @router.post("/change-name", response_model=ApiResponse[AccountResponse])
 async def change_name(data: ChangeName, user: Account = Depends(verify_account), db: Session = Depends(get_db)):
     updated_user = await update_name(db, data, user)
-    account_response = AccountResponse(username=updated_user.username, phone=updated_user.phone, name=updated_user.name)
-    return ApiResponse(data=account_response)
+    if not updated_user:
+        return ApiResponse(data=None, error_message="User not found")
+    else:
+        return ApiResponse(data=AccountResponse.from_db(updated_user))
 
 
 @router.post("/delete/{uid}", response_model=ApiResponse[bool])

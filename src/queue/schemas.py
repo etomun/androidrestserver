@@ -1,11 +1,9 @@
 from pydantic import BaseModel
 
 from src.account import AccountResponse
-from src.address.models import Address
 from src.address.schemas import AddressResponse
-from src.queue.models import VisitorQueue
-from src.member.models import Member
 from src.member.schemas import MemberResponse
+from src.queue.models import VisitorQueue
 from src.utils import date_time_to_str_gmt
 
 
@@ -17,8 +15,7 @@ class UpdateQueue(BaseModel):
 class QueueResponse(BaseModel):
     id: str
     event_id: str
-    member_id: str
-    member_code: str
+    queue_pic_id: str
     last_status: str
     date_queued: str
     date_entered: str
@@ -34,9 +31,7 @@ class QueueResponse(BaseModel):
         return cls(
             id=queue.id,
             event_id=queue.event_id,
-            member_id=member.id,
-            member_code=queue.member_code,
-            member_unique_code=member.unique_code,
+            queue_pic_id=queue.queue_pic_id,
             last_status=queue.state.value,
             date_queued=date_time_to_str_gmt(queue.date_queued),
             date_entered=date_time_to_str_gmt(queue.date_entered),

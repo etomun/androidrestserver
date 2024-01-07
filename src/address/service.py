@@ -39,6 +39,11 @@ async def get_by_id(db: Session, address_id: str):
     return address
 
 
+async def get_all(db: Session):
+    addresses = db.query(Address).all()
+    return addresses
+
+
 async def search(db: Session, keyword: str):
     addresses = db.query(Address).filter(
         (Address.village.ilike(f"%{keyword}%")) |

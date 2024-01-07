@@ -19,6 +19,7 @@ class VisitorQueue(Base):
     id = Column(String, primary_key=True, unique=True, nullable=False, default=lambda: uuid.uuid4().hex)
     event_id = Column(String, ForeignKey("events.id"), nullable=False)
     member_code = Column(String, ForeignKey("members.unique_code"), nullable=False)
+    queue_pic_id = Column(String, nullable=False)
     state = Column(Enum(QueueState), default=QueueState.register)
     date_queued = Column(DateTime, server_default=func.now())
     date_entered = Column(DateTime)
