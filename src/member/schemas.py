@@ -1,5 +1,4 @@
-from pydantic import BaseModel
-from pydantic.v1 import validator
+from pydantic import BaseModel, validator
 
 from src.account.schemas import AccountResponse
 from src.address.schemas import AddressResponse

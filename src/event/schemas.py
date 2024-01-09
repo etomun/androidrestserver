@@ -1,5 +1,4 @@
-from pydantic import BaseModel
-from pydantic.v1 import root_validator
+from pydantic import BaseModel, root_validator
 
 from src.event.models import Event
 from src.utils import str_to_date_time_gmt, date_time_to_str_gmt
