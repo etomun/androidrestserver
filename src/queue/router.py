@@ -24,6 +24,7 @@ async def add_queue(data: UpdateQueue, db: Session = Depends(get_db), user: Acco
     queue = await add_new(db, user, data)
     message_payload = {
         "event_id": event.id,
+        "message_code": 1,
         "message": f"{queue.member.name} just arrived to {queue.event.name}"
     }
     await ws_mgr.send_message(event.id, message_payload)
@@ -40,6 +41,7 @@ async def enter_gate(data: UpdateQueue, db: Session = Depends(get_db), user: Acc
 
     await ws_mgr.send_message(event.id, {
         "event_id": event.id,
+        "message_code": 2,
         "message": f"{queue.member.name} just entered the Gate of {queue.event.name}"
     })
     return ApiResponse(data=QueueResponse.from_db(queue))
@@ -54,10 +56,21 @@ async def exit_gate(data: UpdateQueue, db: Session = Depends(get_db), user: Acco
 
     await ws_mgr.send_message(event.id, {
         "event_id": event.id,
+        "message_code": 3,
         "message": f"{queue.member.name} just exited the Gate of {queue.event.name}"
     })
 
     return ApiResponse(data=QueueResponse.from_db(queue))
+
+
+@router.get("/{event_id}", response_model=ApiResponse[List[QueueResponse]])
+async def get_all_visitors(event_id: str, db: Session = Depends(get_db)):
+    queue = await get_all(db, event_id)
+    print(queue)
+    if not queue:
+        return ApiResponse(data=None, error_message="Queue not found")
+    else:
+        return ApiResponse(data=[QueueResponse.from_db(q) for q in queue])
 
 
 @router.get("/waiting/{event_id}", response_model=ApiResponse[List[QueueResponse]])
