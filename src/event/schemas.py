@@ -14,7 +14,7 @@ class EventCreate(BaseModel):
     has_queue: bool
 
     # NOT CALLED https://github.com/pydantic/pydantic/issues/3821, call manually in router
-    @root_validator
+    @root_validator(pre=False, skip_on_failure=True)
     def validate_date_range(cls, values):
         start_date = values.get("expected_start_date")
         end_date = values.get("expected_end_date")

@@ -66,7 +66,6 @@ async def exit_gate(data: UpdateQueue, db: Session = Depends(get_db), user: Acco
 @router.get("/{event_id}", response_model=ApiResponse[List[QueueResponse]])
 async def get_all_visitors(event_id: str, db: Session = Depends(get_db)):
     queue = await get_all(db, event_id)
-    print(queue)
     if not queue:
         return ApiResponse(data=None, error_message="Queue not found")
     else:
