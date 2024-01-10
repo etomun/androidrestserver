@@ -1,0 +1,163 @@
+.columns {
+  margin: 0px
+}
+
+body {
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+.box-shadow {
+  background: white;
+  border: 1px solid #f5f5f5;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+}
+
+.content h1, h2, h3 {
+  margin-bottom: 10px;
+}
+
+.side-navbar-right {
+  position: fixed;
+  top: 0;
+  right: -400px;
+  width: 400px;
+  height: 400%;
+  background-color: rgba(33, 33, 33, 0.95);
+  color: #c0c0c0;
+  transition: right 0.3s ease-out;
+  box-shadow: 0px 0px 0px 4px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(5px);
+  -o-backdrop-filter:blur(5px);
+  -ms-backdrop-filter:blur(5px);
+  -moz-backdrop-filter:blur(5px);
+  -webkit-backdrop-filter:blur(5px);
+  &.open {
+    right: 0;
+  }
+}
+
+.menu-list {
+  padding: 20px 30px;
+  display: flex;
+  cursor: pointer;
+  &.active {
+    background-color: #353535;
+    font-weight: bold;
+  }
+  &:hover {
+    background-color: #606060;
+    color: #000;
+  }
+}
+
+.animated-slide-up {
+  position: relative;
+  animation: slideUpAndStay 0.5s ease-in-out forwards;
+}
+
+@keyframes slideUpAndStay{
+  0% {
+    opacity: 0;
+    top: 10vh;
+  }
+  100% {
+    opacity: 1;
+    top: 0vh;
+  }
+}
+
+.animated-slide-gone {
+  position: relative;
+  animation: slideGone 0.5s ease-in-out forwards;
+}
+
+@keyframes slideGone{
+  0% {
+    opacity: 0;
+    top: 0;
+  }
+  100% {
+    opacity: 1;
+    top: -65vh;
+  }
+}
+
+.animated-fade-out {
+  opacity: 1;
+  position: relative;
+  animation: fadeOut 0.5s ease-in-out forwards;
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.animated-fade-in {
+  opacity: 0;
+  position: relative;
+  animation: fadeIn 0.5s ease-in-out forwards;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.container.is-fluid {
+  padding: 32px;
+}
+
+.block:not(:last-child) {
+  margin-bottom: 0.8rem;
+}
+
+.block-text:not(:last-child){
+  margin-bottom: 0.5rem;
+}
+
+.custom-shadow {
+  box-shadow: 3px 3px 4px 0px rgba(97,97,97,0.34);
+}
+
+.dark-input {
+  background-color: #353535;
+  border: 0px;
+  color: #f5f5f5;
+  border-radius: 5px;
+  &:focus {
+    border-color: #f5f5f5;
+    box-shadow: 0 0 0 0.125em rgba(245, 245, 245, 0.25);
+    ~ .dark-icon {
+      color: #f5f5f5 !important;
+    }
+  }
+  &::placeholder {
+    color: #5b5b5b;
+  }
+}
+
+.dark-icon {
+  color: #5b5b5b !important;
+}
+
+@media screen and (max-width: 768px) {
+  .side-navbar-right {
+    right: -200px;
+    width: 200px;
+  }
+
+  .container.is-fluid {
+    padding: 15px;
+  }
+}
