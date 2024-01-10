@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 from fastapi import APIRouter, Depends
 
@@ -19,6 +18,24 @@ async def register_member(data: MemberCreate, db: Session = Depends(get_db), pic
         return ApiResponse(data=None, error_message="Failed to create member")
     else:
         return ApiResponse(data=MemberResponse.from_db(member))
+
+
+@router.post("/batch-register", response_model=ApiResponse[List[MemberResponse]])
+async def bulk_reg_male_members(codes: List[str], address_id: str, db: Session = Depends(get_db),
+                                pic: Account = Depends(verify_account)):
+    datas = [MemberCreate(
+        unique_code=code,
+        name="",
+        gender="male",
+        age=0,
+        is_relatives=False,
+        address_id=address_id
+    ) for code in codes]
+    members = await bulk_insert(db, datas, pic)
+    if not members:
+        return ApiResponse(data=None, error_message="Failed to create member")
+    else:
+        return ApiResponse(data=[MemberResponse.from_db(member) for member in members])
 
 
 @router.post("/delete/{unique_code}", response_model=ApiResponse[bool])

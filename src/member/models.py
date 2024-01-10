@@ -10,7 +10,6 @@ from src.database import Base
 class Gender(Enum):
     MALE = 'male'
     FEMALE = 'female'
-    OTHER = 'other'
 
 
 class Member(Base):

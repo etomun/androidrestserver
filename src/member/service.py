@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import HTTPException
 from sqlalchemy.orm import Session, joinedload
 from starlette import status
@@ -12,16 +14,29 @@ async def add(db: Session, data: MemberCreate, pic: Account):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Code already registered")
 
     db_member = Member(unique_code=data.unique_code,
-                        name=data.name,
-                        gender=data.gender,
-                        age=data.age,
-                        is_relatives=data.is_relatives,
-                        address_id=data.address_id,
-                        pic_id=pic.id)
+                       name=data.name,
+                       gender=data.gender,
+                       age=data.age,
+                       is_relatives=data.is_relatives,
+                       address_id=data.address_id,
+                       pic_id=pic.id)
     db.add(db_member)
     db.commit()
     db.refresh(db_member)
     return db_member
+
+
+async def bulk_insert(db: Session, datas: List[MemberCreate], pic: Account):
+    members = [Member(unique_code=data.unique_code,
+                      name=data.name,
+                      gender=data.gender,
+                      age=data.age,
+                      is_relatives=data.is_relatives,
+                      address_id=data.address_id,
+                      pic_id=pic.id) for data in datas]
+    db.add_all(members)
+    db.commit()
+    return members
 
 
 async def delete(db: Session, unique_code: str) -> bool:

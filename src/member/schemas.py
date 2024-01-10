@@ -18,7 +18,7 @@ class MemberCreate(BaseModel):
         try:
             return Gender(value.upper()).value
         except ValueError:
-            return Gender.OTHER.value
+            return Gender.MALE.value
 
 
 class MemberResponse(MemberCreate):
