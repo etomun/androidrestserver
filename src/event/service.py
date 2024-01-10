@@ -106,7 +106,7 @@ async def update(db: Session, event_id: str, data: EventCreate):
     try:
         db_event = db.query(Event).filter_by(id=event_id).first()
         if db_event:
-            for attr, value in data.model_dump().items():
+            for attr, value in data.dict().items():
                 if value is not None:
                     if attr in ['expected_start_date', 'expected_end_date']:
                         value = str_to_date_time_gmt(value)

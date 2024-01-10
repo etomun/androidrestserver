@@ -23,7 +23,7 @@ async def add_queue(data: UpdateQueue, db: Session = Depends(get_db), user: Acco
     event = await verify_queue_event_started(data.event_id, db)
     queue = await add_new(db, user, data)
     payload = SocketMessage(event_id=event.id, message_code=QueueState.register.value,
-                            message=f"{queue.member.name} just arrived to {queue.event.name}").model_dump()
+                            message=f"{queue.member.name} just arrived to {queue.event.name}").dict()
     await ws_mgr.send_message(event.id, payload)
     return ApiResponse(data=QueueResponse.from_db(queue))
 
@@ -35,7 +35,7 @@ async def enter_gate(data: UpdateQueue, db: Session = Depends(get_db), user: Acc
     event = await verify_queue_event_started(data.event_id, db)
     queue = await update_state(db, data, QueueState.enter_gate)
     payload = SocketMessage(event_id=event.id, message_code=QueueState.enter_gate.value,
-                            message=f"{queue.member.name} just entered the Gate of {queue.event.name}").model_dump()
+                            message=f"{queue.member.name} just entered the Gate of {queue.event.name}").dict()
     await ws_mgr.send_message(event.id, payload)
     return ApiResponse(data=QueueResponse.from_db(queue))
 
@@ -48,7 +48,7 @@ async def exit_gate(data: UpdateQueue, db: Session = Depends(get_db), user: Acco
     queue = await update_state(db, data, QueueState.exit_gate)
 
     payload = SocketMessage(event_id=event.id, message_code=QueueState.exit_gate.value,
-                            message=f"{queue.member.name} just exited the Gate of {queue.event.name}").model_dump()
+                            message=f"{queue.member.name} just exited the Gate of {queue.event.name}").dict()
     await ws_mgr.send_message(event.id, payload)
     return ApiResponse(data=QueueResponse.from_db(queue))
 

@@ -20,7 +20,7 @@ async def add(db: Session, data: List[AddressCreate]):
                 raise HTTPException(status_code=400,
                                     detail=f"Address with village '{new_address.village}' already exists")
 
-            address_model = Address(**new_address.model_dump())
+            address_model = Address(**new_address.dict())
             db.add(address_model)
             db.commit()
             db.refresh(address_model)
@@ -56,7 +56,7 @@ async def update(db: Session, address_id: str, data: AddressCreate):
     address = db.query(Address).filter_by(id=address_id).first()
     if not address:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Data not found")
-    for field, value in data.model_dump(exclude_unset=True).items():
+    for field, value in data.dict(exclude_unset=True).items():
         setattr(address, field, value)
     db.commit()
     db.refresh(address)
