@@ -69,9 +69,7 @@ async def get_all(db: Session, event_id: str):
         .filter_by(event_id=event_id)
         .options(joinedload(VisitorQueue.member).joinedload(Member.address))
         .join(Member, VisitorQueue.member)
-        .order_by(desc(Member.is_relatives))  # Relatives first
-        .order_by(Member.gender)  # Females before Males
-        .order_by(VisitorQueue.last_update)  # First in First out
+        .order_by(desc(Member.is_relatives), Member.gender, VisitorQueue.state, VisitorQueue.last_update)
         .all()
     )
 
