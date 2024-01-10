@@ -8,7 +8,7 @@ from starlette.websockets import WebSocket, WebSocketDisconnect
 from src.database import get_db
 from src.dependencies import verify_account, verify_admin, get_websocket_manager
 from src.queue.dependencies import verify_queue_event_started
-from src.queue.schemas import QueueResponse
+from src.queue.schemas import QueueResponse, SocketMessage
 from src.queue.service import *
 from src.schemes import ApiResponse
 from src.websocket import WSManager
@@ -22,13 +22,9 @@ async def add_queue(data: UpdateQueue, db: Session = Depends(get_db), user: Acco
     logging.info(user.id)
     event = await verify_queue_event_started(data.event_id, db)
     queue = await add_new(db, user, data)
-    message_payload = {
-        "event_id": event.id,
-        "message_code": 1,
-        "message": f"{queue.member.name} just arrived to {queue.event.name}"
-    }
-    await ws_mgr.send_message(event.id, message_payload)
-
+    payload = SocketMessage(event_id=event.id, message_code=QueueState.register.value,
+                            message=f"{queue.member.name} just arrived to {queue.event.name}").model_dump()
+    await ws_mgr.send_message(event.id, payload)
     return ApiResponse(data=QueueResponse.from_db(queue))
 
 
@@ -38,12 +34,9 @@ async def enter_gate(data: UpdateQueue, db: Session = Depends(get_db), user: Acc
     logging.info(user.id)
     event = await verify_queue_event_started(data.event_id, db)
     queue = await update_state(db, data, QueueState.enter_gate)
-
-    await ws_mgr.send_message(event.id, {
-        "event_id": event.id,
-        "message_code": 2,
-        "message": f"{queue.member.name} just entered the Gate of {queue.event.name}"
-    })
+    payload = SocketMessage(event_id=event.id, message_code=QueueState.enter_gate.value,
+                            message=f"{queue.member.name} just entered the Gate of {queue.event.name}").model_dump()
+    await ws_mgr.send_message(event.id, payload)
     return ApiResponse(data=QueueResponse.from_db(queue))
 
 
@@ -54,12 +47,9 @@ async def exit_gate(data: UpdateQueue, db: Session = Depends(get_db), user: Acco
     event = await verify_queue_event_started(data.event_id, db)
     queue = await update_state(db, data, QueueState.exit_gate)
 
-    await ws_mgr.send_message(event.id, {
-        "event_id": event.id,
-        "message_code": 3,
-        "message": f"{queue.member.name} just exited the Gate of {queue.event.name}"
-    })
-
+    payload = SocketMessage(event_id=event.id, message_code=QueueState.exit_gate.value,
+                            message=f"{queue.member.name} just exited the Gate of {queue.event.name}").model_dump()
+    await ws_mgr.send_message(event.id, payload)
     return ApiResponse(data=QueueResponse.from_db(queue))
 
 

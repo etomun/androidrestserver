@@ -50,3 +50,9 @@ class QueueResponse(BaseModel):
                 pic=pic,
             ),
         )
+
+
+class SocketMessage(BaseModel):
+    event_id: str
+    message_code: str
+    message: str
