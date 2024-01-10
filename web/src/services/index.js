@@ -1,5 +1,7 @@
 import eventsService from './events';
+import queueService from './queue';
 
 export {
-  eventsService
+  eventsService,
+  queueService
 };

@@ -9,3 +9,7 @@ export const getRandomGradient = () => {
 
   return colorArr[Math.floor(Math.random() * colorArr.length)];
 };
+
+export const isMobile = () => {
+  return window.innerWidth <= 768;
+};
