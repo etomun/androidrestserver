@@ -20,6 +20,9 @@ export const queueStatus = {
   exited: {
     name: 'exited',
     icon: faDoorOpen
+  },
+  queued: {
+    name: 'queued'
   }
 };
 

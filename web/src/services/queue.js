@@ -6,7 +6,8 @@ const api_end_point = API_URL+'/api/queue';
 const queueService = {
   waiting,
   entered,
-  exited
+  exited,
+  all
 };
 
 function waiting(eventId) {
@@ -19,6 +20,10 @@ function entered(eventId) {
 
 function exited(eventId) {
   return submit('GET', `${api_end_point}/exited/${eventId}`);
+}
+
+function all(eventId){
+  return submit('GET', `${api_end_point}/${eventId}`);
 }
 
 export default queueService;
