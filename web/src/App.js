@@ -1,12 +1,27 @@
 import React from 'react';
-import EventList from './EventList';
+import 'assets/main.scss';
+import { unstable_HistoryRouter as HistoryRouter, Routes, Route } from 'react-router-dom';
+import {ToastContainer} from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import Queue from 'pages/Events/queue';
+import { createBrowserHistory } from 'history';
+import Events from 'pages/Events/event';
+
+const history = createBrowserHistory({window});
 
 const App = () => {
   return (
-    <div>
-      <h1>Your App Title</h1>
-      <EventList />
-    </div>
+    <HistoryRouter history={history}>
+      <Routes>
+        <Route path="/" exact Component={Events} />
+        <Route path="/queue/:id" exact Component={Queue} />
+      </Routes>
+      <ToastContainer 
+        position="top-center"
+        hideProgressBar
+        pauseOnFocusLoss={false}
+      />
+    </HistoryRouter>
   );
 };
 
