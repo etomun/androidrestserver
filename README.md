@@ -4,20 +4,13 @@ Use deploy.sh ``./deploy.sh``
 
 ----
 
-__Crucial FastAPI requirements and installation on Termux__
+__FastAPI installation on Termux__
 
 - ``pkg update && pkg upgrade``
 - ``pkg install python`` python-pip included
-- ``pip install fastapi[all]`` uvicorn included otherwise install fastapi and uvicorn separately.
-- ``pip list`` and verify the fastapi and uvicorn is installed
+- ``pip install fastapi[all]`` uvicorn included otherwise install fastapi and uvicorn separately
 
-If you got error *'Building wheel for maturin (pyproject.toml) did not run successfully.'*. Install maturin using below steps:
-- ``pkg install rust``
-- ``rustc update``
-- ``pip install maturin``
-- ``pip install fastapi[all]``
-
-If still facing same error, try to install rust via proot-distro. Login to __proot-distro__ using ``pd login <your-installed-distro>`` (i.e. pd login ubuntu) and run: 
+Some device architectures may encounter the problem building the wheel for the maturin package during fastapi installation. Try install maturin via proot-distro. Login to __proot-distro__ using ``pd login <your-installed-distro>`` (e.g. pd login ubuntu) and run: 
 - ``apt update``
 - ``apt upgrade``
 - ``apt install make``
@@ -30,7 +23,7 @@ If still facing same error, try to install rust via proot-distro. Login to __pro
 
 ____
 
-__Setup SSH Server using openssh__
+__Optional: Setup SSH Server on Termux using openssh__
 
 On Termux (host):
 - ``pkg update && pkg upgrade``
