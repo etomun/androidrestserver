@@ -30,10 +30,9 @@ On Termux (host):
 - ``pkg install openssh``
 - To set password use ``passwd <Termux UID>``. ``whoami`` to see the UID
 
-On remote device:
-- ``ssh-keygen -R "[<host_name_or_ip>]:8022"`` to remove the old host fingerprint if existed
-- If you already know the IP of host name of Termux add it to known_hosts: ``ssh-keyscan -H <hostname_or_ip> >> ~/.ssh/known_hosts``
-- Verify known host is  ``ssh-keyscan -H <hostname_or_ip> >> ~/.ssh/known_hosts``
-- Accessing from remote device in the same network ``ssh -p 8022 <Termux UID>@<Termux IP Address>``.
-Example: ssh -p 8022 u0_a254@192.168.0.2. Enter the host password.
+On remote devices (example for local network):
+- If you need to remove the existing host fingerprint``ssh-keygen -R "[<host_name_or_ip>]:8022"``
+- Add Termux to known_hosts: ``ssh-keyscan -H <hostname_or_ip> >> ~/.ssh/known_hosts``
+- Verify it has successfully added ``ssh-keyscan -H <hostname_or_ip> >> ~/.ssh/known_hosts``
+- Access host ``ssh -p 8022 <Termux UID>@<Termux IP Address>``. Example: ssh -p 8022 u0_a254@192.168.0.2. Enter the host password.
   
