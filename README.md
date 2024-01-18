@@ -28,9 +28,7 @@ __Optional: Setup SSH Server on Termux using openssh__
 On Termux (host):
 - ``pkg update && pkg upgrade``
 - ``pkg install openssh``
-- Use ``whoami`` to see the UID
-- To set password use ``passwd <Termux UID>``
-- 
+- To set password use ``passwd <Termux UID>``. ``whoami`` to see the UID
 
 On remote device:
 - ``ssh-keygen -R "[<host_name_or_ip>]:8022"`` to remove the old host fingerprint if existed
